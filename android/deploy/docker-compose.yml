@@ -1,0 +1,68 @@
+# DartVio 联机后端 · 自建 PostgREST 兼容栈
+#
+# 三个容器：
+#   db        Postgres 15（首次启动自动执行 schema.sql 建表）
+#   postgrest 把 Postgres 直接暴露成 REST（Supabase 用的就是它，语义完全一致）
+#   caddy     自动申请 Let's Encrypt 证书，把 /rest/v1/* 反代到 postgrest
+#
+# 不部署 Realtime：App 本来就有「订阅断了轮询接管」的降级路径，
+# 先跑通联机，推送以后再说。
+#
+# 用法：
+#   1. cp .env.example .env 并填好
+#   2. docker compose up -d
+#   3. docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "notify pgrst, 'reload schema';"
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dartvio}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # PostgREST 自己用 authenticator 连库，收到请求后再按 JWT 里的角色切到 anon
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/${POSTGRES_DB:-dartvio}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      PGRST_DB_MAX_ROWS: "1000"
+      PGRST_OPENAPI_SERVER_PROXY_URI: https://${DOMAIN}
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - postgrest
+
+volumes:
+  pgdata: {}
+  caddy_data: {}
+  caddy_config: {}

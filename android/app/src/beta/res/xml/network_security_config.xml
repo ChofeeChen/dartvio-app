@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Beta Demo 专用明文策略（覆盖 app/src/main/res/xml/network_security_config.xml 的同名资源）。
+
+  为什么必须全局放开：局域网联机的目标地址是运行期输入的 `ws://<局域网 IP>:8080`，
+  network security config 的 <domain> 不支持 CIDR 网段，无法写「只允许内网」。
+  详见 main 源集那份配置文件里的完整取舍说明。
+
+  ★ 这条是 Beta 包的**功能前提**：beta 变体不是 debug 变体，它不会吃到
+  `app/src/debug/` 下的同名覆盖文件。少了这份，朋友装上后联机必然连不通
+  （表现为主机已开启、客人填了 IP 却一直超时），而界面不会提示是明文被拦。
+
+  影响范围：仅 beta 变体（对外试用）。release 变体沿用 main 的严格配置。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

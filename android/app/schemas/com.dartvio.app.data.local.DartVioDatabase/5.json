@@ -1,0 +1,341 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "abfada526d8a879f48e05409c222b727",
+    "entities": [
+      {
+        "tableName": "match_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`matchId` TEXT NOT NULL, `gameType` TEXT NOT NULL, `matchType` TEXT NOT NULL, `matchTypeLabel` TEXT NOT NULL, `isFormal` INTEGER NOT NULL, `containsAi` INTEGER NOT NULL, `playerCount` INTEGER NOT NULL, `startedAt` INTEGER NOT NULL, `endedAt` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, `winnerPlayerId` TEXT, `legCount` INTEGER NOT NULL, `legsToWin` INTEGER NOT NULL, `startScore` INTEGER NOT NULL, `x01Mode` TEXT, `doubleOut` INTEGER NOT NULL, `doubleIn` INTEGER NOT NULL, `overtimeRule` TEXT, `outMode` TEXT NOT NULL DEFAULT 'DOUBLE_OUT', `inMode` TEXT NOT NULL DEFAULT 'STRAIGHT_IN', `bullMode` TEXT NOT NULL DEFAULT 'STANDARD_25_50', `maxRounds` INTEGER NOT NULL DEFAULT 0, `cricketVariant` TEXT NOT NULL DEFAULT 'STANDARD', `targetSetCsv` TEXT NOT NULL DEFAULT '', `endedByRoundLimit` INTEGER NOT NULL DEFAULT 0, `totalDarts` INTEGER NOT NULL, PRIMARY KEY(`matchId`))",
+        "fields": [
+          {
+            "fieldPath": "matchId",
+            "columnName": "matchId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameType",
+            "columnName": "gameType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchType",
+            "columnName": "matchType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchTypeLabel",
+            "columnName": "matchTypeLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFormal",
+            "columnName": "isFormal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "containsAi",
+            "columnName": "containsAi",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playerCount",
+            "columnName": "playerCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAt",
+            "columnName": "endedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "durationMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "winnerPlayerId",
+            "columnName": "winnerPlayerId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "legCount",
+            "columnName": "legCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legsToWin",
+            "columnName": "legsToWin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startScore",
+            "columnName": "startScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "x01Mode",
+            "columnName": "x01Mode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "doubleOut",
+            "columnName": "doubleOut",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doubleIn",
+            "columnName": "doubleIn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overtimeRule",
+            "columnName": "overtimeRule",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "outMode",
+            "columnName": "outMode",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'DOUBLE_OUT'"
+          },
+          {
+            "fieldPath": "inMode",
+            "columnName": "inMode",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'STRAIGHT_IN'"
+          },
+          {
+            "fieldPath": "bullMode",
+            "columnName": "bullMode",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'STANDARD_25_50'"
+          },
+          {
+            "fieldPath": "maxRounds",
+            "columnName": "maxRounds",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "cricketVariant",
+            "columnName": "cricketVariant",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'STANDARD'"
+          },
+          {
+            "fieldPath": "targetSetCsv",
+            "columnName": "targetSetCsv",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "endedByRoundLimit",
+            "columnName": "endedByRoundLimit",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totalDarts",
+            "columnName": "totalDarts",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "matchId"
+          ]
+        }
+      },
+      {
+        "tableName": "match_players",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`matchId` TEXT NOT NULL, `playerId` TEXT NOT NULL, `name` TEXT NOT NULL, `isAi` INTEGER NOT NULL, `aiDifficulty` TEXT, `orderIndex` INTEGER NOT NULL, `isWinner` INTEGER NOT NULL, `legsWon` INTEGER NOT NULL, `dartsThrown` INTEGER NOT NULL, `turnsPlayed` INTEGER NOT NULL, `totalScore` INTEGER NOT NULL, `maxTurnScore` INTEGER NOT NULL, `remaining` INTEGER NOT NULL, `busts` INTEGER NOT NULL, `count180` INTEGER NOT NULL, `bestCheckout` INTEGER NOT NULL, `checkoutAttempts` INTEGER NOT NULL, `marksTotal` INTEGER NOT NULL, `tripleHits` INTEGER NOT NULL, `bullHits` INTEGER NOT NULL, `closedAllSectionLegs` INTEGER NOT NULL, `turnsInClosedLegs` INTEGER NOT NULL, `closedSectionsTotal` INTEGER NOT NULL, `firstClosedCsv` TEXT NOT NULL, PRIMARY KEY(`matchId`, `playerId`))",
+        "fields": [
+          {
+            "fieldPath": "matchId",
+            "columnName": "matchId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playerId",
+            "columnName": "playerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isAi",
+            "columnName": "isAi",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aiDifficulty",
+            "columnName": "aiDifficulty",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderIndex",
+            "columnName": "orderIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isWinner",
+            "columnName": "isWinner",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legsWon",
+            "columnName": "legsWon",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dartsThrown",
+            "columnName": "dartsThrown",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnsPlayed",
+            "columnName": "turnsPlayed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalScore",
+            "columnName": "totalScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxTurnScore",
+            "columnName": "maxTurnScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remaining",
+            "columnName": "remaining",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "busts",
+            "columnName": "busts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "count180",
+            "columnName": "count180",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestCheckout",
+            "columnName": "bestCheckout",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkoutAttempts",
+            "columnName": "checkoutAttempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "marksTotal",
+            "columnName": "marksTotal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tripleHits",
+            "columnName": "tripleHits",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bullHits",
+            "columnName": "bullHits",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closedAllSectionLegs",
+            "columnName": "closedAllSectionLegs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnsInClosedLegs",
+            "columnName": "turnsInClosedLegs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closedSectionsTotal",
+            "columnName": "closedSectionsTotal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstClosedCsv",
+            "columnName": "firstClosedCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "matchId",
+            "playerId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'abfada526d8a879f48e05409c222b727')"
+    ]
+  }
+}

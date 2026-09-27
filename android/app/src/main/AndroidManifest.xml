@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      M12 手机视觉计分（第四输入来源，半自动辅助）：
+      相机仅在用户主动开启视觉计分时使用；视频帧不上传、不落盘。
+      required=false —— 无摄像头设备仍可安装并回落 M3 手动录入。
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!--
+      在线对战（云端链路）：REST 与 Realtime 都要出网，联机只要求手机连互联网，
+      不再需要「同一 WiFi」，因此也不再有监听端口与前台服务。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      普通权限（无需运行时申请）：诊断页用它回答「当前是 WiFi 还是蜂窝」——
+      蜂窝网络下 Realtime 的握手常被拦在半路，而 REST 完全正常，
+      不知道这一条就会把网络问题当成 App 问题去查。
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
+
+    <application
+        android:name=".DartVioApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DartVio">
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.DartVio_CodexM13"
+            android:windowSoftInputMode="adjustResize"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

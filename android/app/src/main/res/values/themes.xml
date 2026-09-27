@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.DartVio" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/dartvio_background</item>
+        <item name="android:statusBarColor">@color/dartvio_background</item>
+        <item name="android:navigationBarColor">@color/dartvio_background</item>
+    </style>
+
+    <style name="Theme.DartVio_CodexM13" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

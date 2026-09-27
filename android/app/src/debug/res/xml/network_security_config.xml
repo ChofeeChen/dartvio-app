@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug 专用明文策略（覆盖 app/src/main/res/xml/network_security_config.xml 的同名资源）。
+
+  为什么必须全局放开：局域网联机的目标地址是运行期输入的 `ws://<局域网 IP>:8080`，
+  network security config 的 <domain> 不支持 CIDR 网段，无法写「只允许内网」。
+  详见 main 源集那份配置文件里的完整取舍说明。
+
+  影响范围：仅 debug 变体（开发/演示）。release 变体沿用 main 的严格配置。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

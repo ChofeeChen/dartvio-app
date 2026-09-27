@@ -1,0 +1,17 @@
+{$DOMAIN} {
+	# 客户端请求的是 /rest/v1/<表名>，PostgREST 自己认的是 /<表名>。
+	# handle_path 会在转发前剥掉匹配到的前缀，所以上游收到的正是 /dartvio_rooms?...
+	handle_path /rest/v1/* {
+		reverse_proxy postgrest:3000
+	}
+
+	# Realtime 暂不部署。App 探测不到推送会自己降级成轮询（大厅 20s / 对局 3s），
+	# 这里明确回 404，避免它去连一个不存在的 WebSocket 而卡在「连接中」。
+	handle /realtime/* {
+		respond "realtime not enabled" 404
+	}
+
+	handle {
+		respond "dartvio api" 200
+	}
+}

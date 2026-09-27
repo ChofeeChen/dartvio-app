@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  明文流量策略（M5 局域网联机）。
+
+  背景：Android 9（API 28）起默认禁止明文流量，`http://` 与 `ws://` 都会被拦。
+  本项目的局域网联机是「手机 A 内嵌 Ktor server，手机 B 直连 A 的局域网 IP」，
+  用的就是 `ws://192.168.x.x:8080`。
+
+  为什么这里**只放行 localhost**：
+  - 局域网 IP 是运行期才知道的（不同路由器不同网段），而 network security config 的
+    <domain> 只接受**域名或字面 IP**，**不支持 CIDR 网段**，所以无法把「192.168.0.0/16」
+    写成白名单 —— 这是「局域网明文无法精细白名单」的根本原因。
+  - 于是只剩两个选择：全局放开明文，或全局禁止。
+
+  取舍：main 源集保持**禁止**（release 包因此仍然拒绝任意明文，符合
+  api_dump.txt 的连接安全要求）；放行配置只放在 debug 源集
+  （app/src/debug/res/xml/network_security_config.xml 同名资源覆盖）。
+  结果是「开发/演示包可联机，正式包不放水」。
+
+  后续接入正式 HTTPS/WSS 后端后，debug 这份也应一并收紧。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- 仅放行本机回环：用于本机自测（同机 双进程 / adb reverse）。 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dartvio_background">#121212</color>
+    <color name="dartvio_primary">#EE9756</color>
+    <color name="dartvio_secondary">#4EC9C4</color>
+    <color name="dartvio_accent">#E8C468</color>
+</resources>

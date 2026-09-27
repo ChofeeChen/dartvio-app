@@ -1,0 +1,46 @@
+# ===== 构建产物 =====
+build/
+.gradle/
+.cxx/
+.kotlin/
+app/build/
+*/build/
+*.apk
+*.aab
+*.dex
+*.class
+
+# ===== 本机 IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+local.properties
+.captures/
+.externalNativeBuild/
+
+# ===== 签名与密钥（仅存 Windows 开发机，绝不入库） =====
+keystore.properties
+keystore/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+
+# ===== 业务敏感文件 =====
+DartVio_邀请码台账*.txt
+*邀请码*.txt
+
+# ===== 归档与临时文件（体量大、无版本价值） =====
+docs/archive/历史文档_待清理/
+docs/archive/_backup_asbuilt/
+docs/archive/_backup_m5landevice/
+docs/archive/_archive_docx/
+DartVio APK发布包/*.apk
+build_log.txt
+build_err.txt
+_build_*.txt
+
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
