@@ -1,5 +1,7 @@
 package com.dartvio.app.domain.model
 
+import com.dartvio.app.platform.PlatformTime
+
 /**
  * Cricket 标记进度：0=未开(Closed 未标记), 1..3 标记数。3 表示 Closed。
  * PRD M2：击中单倍 +1、双倍 +2、三倍 +3，上限 3。
@@ -181,5 +183,5 @@ data class MatchState(
     val currentLegIndex: Int = 0,
     val isFinished: Boolean = false,
     val winnerPlayerId: String? = null,
-    val startedAtMillis: Long = System.currentTimeMillis()
+    val startedAtMillis: Long = PlatformTime.nowMillis()
 )

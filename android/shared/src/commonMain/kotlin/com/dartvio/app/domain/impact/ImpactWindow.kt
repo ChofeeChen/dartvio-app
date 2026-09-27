@@ -2,6 +2,7 @@ package com.dartvio.app.domain.impact
 
 import com.dartvio.app.domain.vision.BoardGeometry
 import com.dartvio.app.domain.vision.BoardViewport
+import kotlin.math.PI
 import kotlin.math.sin
 
 /**
@@ -42,7 +43,7 @@ object ImpactWindow {
     fun spanX(target: IntentTarget, spanMm: Double): Double {
         if (target.kind == IntentKind.BULL) return spanMm
         val arcWidth = 2.0 * target.radiusMm() *
-            sin(Math.toRadians(BoardGeometry.SECTOR_ANGLE_DEG / 2.0))
+            sin(BoardGeometry.SECTOR_ANGLE_DEG / 2.0 * PI / 180.0)
         return 3.0 * arcWidth
     }
 

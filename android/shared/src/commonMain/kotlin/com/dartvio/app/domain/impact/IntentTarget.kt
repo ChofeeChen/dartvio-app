@@ -3,6 +3,7 @@ package com.dartvio.app.domain.impact
 import com.dartvio.app.domain.model.Dart
 import com.dartvio.app.domain.vision.BoardGeometry
 import com.dartvio.app.domain.vision.Point2
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -42,7 +43,7 @@ data class IntentTarget(val kind: IntentKind, val sector: Int = 25) {
         if (kind == IntentKind.BULL) return Point2(0.0, 0.0)
         val index = sectorIndex()
         require(index >= 0) { "未知分区：$sector" }
-        val rad = Math.toRadians(index * BoardGeometry.SECTOR_ANGLE_DEG)
+        val rad = index * BoardGeometry.SECTOR_ANGLE_DEG * PI / 180.0
         return Point2(x = sin(rad) * radiusMm(), y = cos(rad) * radiusMm())
     }
 

@@ -1,6 +1,7 @@
 package com.dartvio.app.domain.vision
 
 import com.dartvio.app.domain.model.Dart
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.hypot
 
@@ -71,7 +72,7 @@ object BoardGeometry {
      * 角度自 12 点方向起、顺时针度量；每个分区以该分区号为中心、张角 18°。
      */
     fun sectorAt(xMm: Double, yMm: Double): Int {
-        var deg = Math.toDegrees(atan2(xMm, yMm))
+        var deg = atan2(xMm, yMm) * 180.0 / PI
         if (deg < 0) deg += 360.0
         val index = ((deg + SECTOR_ANGLE_DEG / 2.0) / SECTOR_ANGLE_DEG).toInt() % SECTOR_COUNT
         return SECTOR_ORDER[index]

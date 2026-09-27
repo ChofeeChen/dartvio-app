@@ -2,6 +2,7 @@ package com.dartvio.app.domain.impact
 
 import com.dartvio.app.domain.vision.Point2
 import kotlin.math.exp
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -100,7 +101,7 @@ object HeatmapGrid {
         if (n <= 0) return MIN_BANDWIDTH_MM
         val mean = values.sum() / n
         val sd = if (n < 2) 0.0 else sqrt(values.sumOf { (it - mean) * (it - mean) } / (n - 1))
-        val raw = 1.06 * sd * Math.pow(n.toDouble(), -0.2)
+        val raw = 1.06 * sd * n.toDouble().pow(-0.2)
         return raw.coerceIn(MIN_BANDWIDTH_MM, MAX_BANDWIDTH_MM)
     }
 

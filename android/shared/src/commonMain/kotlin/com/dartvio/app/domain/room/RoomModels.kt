@@ -2,6 +2,7 @@ package com.dartvio.app.domain.room
 
 import com.dartvio.app.domain.model.MatchConfig
 import com.dartvio.app.domain.model.MatchType
+import com.dartvio.app.platform.PlatformTime
 
 /**
  * 房间状态（M6 F6.1 房间列表展示维度）。
@@ -86,7 +87,7 @@ data class Room(
     val allowSpectators: Boolean = true,
     val status: RoomStatus = RoomStatus.WAITING,
     val members: List<RoomMember> = emptyList(),
-    val createdAt: Long = System.currentTimeMillis(),
+    val createdAt: Long = PlatformTime.nowMillis(),
     /** 房间内回合流水号，用于观战排序。 */
     val turnSeq: Int = 0,
     /**

@@ -1,6 +1,8 @@
 package com.dartvio.app.domain.practice
 
 import com.dartvio.app.domain.model.Dart
+import kotlin.math.abs
+import kotlin.math.round
 
 /** MPR 挑战轮数（10 轮 × 3 镖 = 30 镖）。 */
 const val CRICKET_MPR_ROUNDS = 10
@@ -138,5 +140,16 @@ fun mprRating(mpr: Float): String = when {
     else -> "未开始"
 }
 
-/** MPR 保留两位小数的展示文本。 */
-fun formatMpr(mpr: Float): String = String.format("%.2f", mpr)
+/**
+ * MPR 保留两位小数的展示文本。
+ *
+ * 不用 `String.format("%.2f", ...)`：它既是 JVM-only（KMP 的 commonMain 用不了），
+ * 又跟着默认 Locale 走（部分语言环境会输出 `1,23`）。这里**固定**用 `.` 作小数点，
+ * 按四舍五入（正负都远离零）取两位 —— 口径与原实现一致。
+ */
+fun formatMpr(mpr: Float): String {
+    if (mpr.isNaN() || mpr.isInfinite()) return "0.00"
+    val negative = mpr < 0f
+    val cents = round(abs(mpr.toDouble()) * 100.0).toLong()
+    return "${if (negative) "-" else ""}${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
+}

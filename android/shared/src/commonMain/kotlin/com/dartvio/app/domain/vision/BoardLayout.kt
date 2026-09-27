@@ -1,5 +1,6 @@
 package com.dartvio.app.domain.vision
 
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -40,7 +41,7 @@ object BoardLayout {
 
     /** 第 [sectorIndex] 个分区（自 12 点方向起顺时针）的数字标签锚点，画布坐标。 */
     fun numberAnchorPx(squareSidePx: Float, sectorIndex: Int): Point2 {
-        val rad = Math.toRadians(sectorIndex * BoardGeometry.SECTOR_ANGLE_DEG)
+        val rad = sectorIndex * BoardGeometry.SECTOR_ANGLE_DEG * PI / 180.0
         return toCanvasPx(squareSidePx, sin(rad) * NUMBER_RADIUS_MM, cos(rad) * NUMBER_RADIUS_MM)
     }
 }

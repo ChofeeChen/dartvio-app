@@ -1,5 +1,7 @@
 package com.dartvio.app.domain.room
 
+import com.dartvio.app.platform.PlatformTime
+
 /**
  * 等待房的 5 分钟有效期（PRD D4 / A7–A9）。
  *
@@ -29,7 +31,7 @@ object RoomExpiry {
     const val WARN_FROM_MS = 60_000L
 
     /** 建房时写入的到期时刻。 */
-    fun deadline(now: Long = System.currentTimeMillis()): Long = now + WAITING_TTL_MS
+    fun deadline(now: Long = PlatformTime.nowMillis()): Long = now + WAITING_TTL_MS
 
     /**
      * 卡片上应当显示的剩余毫秒；`null` = 这张卡不显示倒计时。

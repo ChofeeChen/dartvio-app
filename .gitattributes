@@ -3,6 +3,12 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
+# 设计源文件：`.ai` 是 PDF 兼容容器，git 的 text=auto 会把它误判成文本并做换行转换，
+# 直接损坏文件（2026-09-28 发现：一次 add 就产生 3584/3624 行重写）。必须显式声明二进制。
+*.ai binary
+*.psd binary
+*.eps binary
+*.sketch binary
 *.jks binary
 *.keystore binary
 *.apk binary
