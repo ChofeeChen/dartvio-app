@@ -738,4 +738,75 @@ Gradle / AGP / Kotlin：9.5.0 / 9.3.0 / 2.2.10
 
 ---
 
-_（后续如 Windows 端处理完 §4.6 的 commonMain，Mac 端补跑 iOS 编译的结果将追加于此）_
+## 6. Windows 端回写（2026-09-28）：commonMain 10 处已清理
+
+### 6.1 处理结果
+
+- 提交 **`872eb04`**（`refactor(shared): commonMain 去除 JVM-only API，打通 iOS 编译`，已变基到 `14896cb` 之上）
+- Android 回归：**65 文件 / 653 例 / 0 fail / 0 skip**（Windows 端本机实测，与 Mac 端 653/0 一致）
+- 自查：commonMain 内已无任何 JVM-only API 残留（按含 `java.util` / `java.time` / `Locale` / `DecimalFormat` / `NumberFormat` 的宽口径复扫）
+
+| 文件（`android/shared/src/commonMain/kotlin/com/dartvio/app/...`） | 改法 |
+| --- | --- |
+| `domain/impact/HeatmapGrid.kt` | `Math.pow(n, -0.2)` → `n.toDouble().pow(-0.2)` |
+| `domain/impact/ImpactWindow.kt` | `Math.toRadians(...)` → `... * PI / 180.0` |
+| `domain/impact/IntentTarget.kt` | 同上 |
+| `domain/vision/BoardGeometry.kt` | `Math.toDegrees(atan2(...))` → `atan2(...) * 180.0 / PI` |
+| `domain/vision/BoardLayout.kt` | `Math.toRadians(...)` → `... * PI / 180.0` |
+| `domain/model/CricketState.kt` | `System.currentTimeMillis()` → `PlatformTime.nowMillis()` |
+| `domain/room/RoomExpiry.kt` | 同上 |
+| `domain/room/RoomModels.kt` | 同上 |
+| `domain/practice/CricketMprEngine.kt` | `String.format("%.2f", mpr)` → 纯 Kotlin 实现（见 §6.2） |
+
+**计数说明**：实际是 **9 个改动点**，不是 10 —— `BoardGeometry.kt:76` 是 74 行的连锁报错，改完 74 行即自动消失。
+
+### 6.2 与 Mac 端建议改法的一处差异：`formatMpr`
+
+按 Mac 端 2026-09-28 追加的约束实现（纯 Kotlin；不用 `Locale` / `DecimalFormat` / `NumberFormat`；不加 `expect/actual`；
+用 `round` 而非截断；用 Double 中间量），另外**补了 NaN / Infinity / 负数的保护** —— MPR 理论上不会出现这些值，
+但可以避免极端值被格式化成 `NaN.00`：
+
+```kotlin
+fun formatMpr(mpr: Float): String {
+    if (mpr.isNaN() || mpr.isInfinite()) return "0.00"
+    val negative = mpr < 0f
+    val cents = round(abs(mpr.toDouble()) * 100.0).toLong()
+    return "${if (negative) "-" else ""}${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
+}
+```
+
+653 例全绿，说明没有用例与它冲突。
+
+### 6.3 顺带修掉的一个文件损坏风险（与 iOS 无关，但必须记一笔）
+
+`android/app logo/DartVio-logo_002.ai` 被 git 的 `text=auto` 误判成**文本**，`git add` 时正在被做 CRLF→LF 重写
+（一次 add 就产生 3584 增 / 3624 删），会**损坏 AI 源文件**。已在 `.gitattributes` 显式声明
+`*.ai` / `*.psd` / `*.eps` / `*.sketch` 为 `binary`，并以二进制重新入库（`DartVio-logo_005.png` 一并入库）。
+⚠️ 提示：仓库里**历史版本**的 `.ai` 仍是被转换过的（无法靠新规则回溯修复），请以本机源文件为准。
+
+### 6.4 W 项答复（§5.4 那张表）
+
+| # | 答复 |
+| --- | --- |
+| W1 | ✅ 收下。Windows 端 `core.filemode = false`（git 在 Windows 的默认），模式位差异**不被跟踪**，不会两端来回抖 |
+| W2 | ✅ 符合预期。Mac 端 `local.properties` 留空正是我们要的效果：联机与匿名统计自动关闭 |
+| W5 | ✅ 不受影响。Windows 端的 SDK 路径来自自己的 `local.properties`（不入库） |
+| W6 | ✅ 按无害处理，暂不动 |
+| W7 | ⚠️ Windows 端 2026-09-27 晚间 `github.com:443` 也被阻断过数小时（22 通），现已恢复。**建议 Windows 端也配一把独立 SSH key 作备用** —— 但要用户手动跑 `ssh-keygen`（本机 shell 无法交互式生成，试了 4 种传参方式均失败） |
+| W8 | ✅ 不是问题。Windows skip=**0**、Mac skip=1，差别是 `OnlineRoomFlowTest` 那 1 例：Mac 端 `local.properties` 为空 → `OnlineConfig.isConfigured = false` → 按设计探活跳过；Windows 端有真实配置且 Supabase 可达，所以真跑通了。**基线以 653 / 0 fail / 0 skip 为准** |
+| W9 | ✅ 接受。用户级 `~/.gradle/gradle.properties` 不影响仓库 |
+| W10 | ✅ 已完成，请 Mac 端补跑两个 iOS 编译任务 |
+| W11 | 收到。提示词 `docs/handoff/Mac端初始化_提示词_V1.00.md` 由 Windows 端修订更合适，本次**先不动**，避免两端同时改同一批文档；等 iOS 编译通过后一并升 V1.01 |
+| W12 | ✅ 已复扫，除清单那 10 处外无残留（与 Mac 端结论一致） |
+| W13 | ✅ 接受 CoreFoundation 方案，不用改。`CFTimeZoneGetSecondsFromGMT` 仍按**具体时刻**取偏移，与 Android 端 `TimeZone.getOffset(atMillis)` 语义一致 |
+
+### 6.5 给 Mac 端的下一步
+
+1. `git pull` 后补跑：`./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64`
+2. 结果追加到本文件（§6 之后）
+3. **两份新文档还没进仓库**：`docs/handoff/iOS首版页面对照表_V1.00.md`、`docs/handoff/iOS端MVP施工蓝图_V1.00.md`
+   在当前 HEAD（`872eb04`）里都不存在。请 Mac 端确认是否已提交 —— 没推的话先推上来，Windows 端才能按它排期
+
+---
+
+_（Mac 端补跑 iOS 编译的结果请追加于此）_
