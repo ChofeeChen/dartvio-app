@@ -17,7 +17,7 @@ struct RootTabsView: View {
             NavigationStack {
                 PlaceholderView(
                     title: "我的",
-                    subtitle: "统计 / 成就 / 排行榜还在 Android 侧解耦（D5），iOS 首版先占位"
+                    subtitle: "统计 / 成就 待接入（等 D5 把 domain/{stats,achievement,leaderboard} 下沉 shared 后直接复用，不在 iOS 侧另做一套本地实现）"
                 )
             }
             .tabItem { Label("我的", systemImage: "person") }

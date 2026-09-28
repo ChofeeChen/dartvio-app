@@ -72,10 +72,13 @@ enum SharedFactory {
      * 更不能传空数组：`advance()` 里 `it[roundIndex] = score` 会 IndexOutOfBoundsException，
      * 这是 V4 崩溃的直接原因（Kotlin 未捕获异常 → `terminateWithUnhandledException` → SIGABRT）。
      * ObjC 签名是 `NSArray<id>` → Swift 用 `NSNull()` 表达 position nil。
+     *
+     * 轮数用 shared 导出的 `CountUpEngineKt.COUNT_UP_ROUNDS`（顶层 const val 会导出，
+     * 挂在 CountUpEngine.kt 的**文件门面类**上，不是裸的全局常量），不再在 iOS 侧硬编码 8。
      */
     static func initialCountUpState() -> CountUpState {
         CountUpState(
-            roundScores: Array(repeating: NSNull(), count: SharedFactory.countUpRounds),
+            roundScores: Array(repeating: NSNull(), count: Int(CountUpEngineKt.COUNT_UP_ROUNDS)),
             currentRoundIndex: 0,
             currentDarts: [],
             dartsThrown: 0,
@@ -85,8 +88,7 @@ enum SharedFactory {
         )
     }
 
-    /** 对齐 commonMain 的 `COUNT_UP_ROUNDS`（常量不导出，故在此镜像；改动需同步）。 */
-    static let countUpRounds = 8
+
 
     // MARK: - AI
 

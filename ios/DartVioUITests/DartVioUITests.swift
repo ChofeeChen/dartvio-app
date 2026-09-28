@@ -27,9 +27,13 @@ final class DartVioUITests: XCTestCase {
         ).firstMatch
         XCTAssertTrue(countUpEntry.waitForExistence(timeout: 5))
 
-        // 我的 tab → 占位页
+        // 我的 tab → 占位页（T3：Tab 可达、不崩、有「统计 / 成就 待接入」说明）
         app.tabBars.buttons["我的"].tap()
         XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 5))
+        let placeholder = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "统计 / 成就 待接入")
+        ).firstMatch
+        XCTAssertTrue(placeholder.waitForExistence(timeout: 5))
 
         // 对局 tab → 开始对局 → P3（键盘出现即视为到达）
         app.tabBars.buttons["对局"].tap()
@@ -64,6 +68,54 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
 
         app.buttons["退出"].tap()
+    }
+
+    // MARK: - V3 补齐：真正打到 GAME SHOT（301 + 双倍出）
+
+    /**
+     * 为什么是 **301 + 双倍出**，而不是「301 + 直出」：
+     *
+     * 蓝图 §1 对 V3 的定义里，「双倍出结镖」本身就是要验的路径之一
+     *（`OutMode.DOUBLE_OUT` 要求最后一镖命中双倍区）。走直出会绕过这个判定，
+     * 补上的只是「结镖 UI」而不是「结镖规则」—— 那样的 ✅ 是假的。
+     *
+     * 所以这里刻意构造一条**最后一镖落在双倍区**的收尾路线：
+     *   301 → T20×3（180）→ 121 → T20（60）→ 61 → T19（57）→ 4 → **D2（4）→ 0**
+     * 这样既把回合数压到 2 个（301 是 501 的一半不到），又完整踩中 double-out。
+     */
+    func testV3CheckoutGameShot() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // 结束规则默认就是「双倍出」，这里只把目标分从 501 换成 301
+        app.buttons["301"].tap()
+        app.buttons["开始对局"].tap()
+        XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
+
+        // 第 1 回合：T20 × 3 = 180 → 301 - 180 = 121
+        for _ in 0..<3 { throwDart(on: app, multiplier: "T", number: "20") }
+        XCTAssertTrue(app.staticTexts["121"].waitForExistence(timeout: 5))
+        app.buttons["结束回合"].tap()
+
+        // 等 AI 打完把手交回人类（AI 每镖之间有延迟，这段不会太快结束）
+        XCTAssertTrue(app.staticTexts["电脑思考中…"].waitForExistence(timeout: 20))
+        let aiDone = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == 0"),
+            object: app.staticTexts["电脑思考中…"]
+        )
+        wait(for: [aiDone], timeout: 90)
+        XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
+
+        // 第 2 回合：逐步验证剩余分，最后一镖用 D2 收尾（双倍区）
+        throwDart(on: app, multiplier: "T", number: "20")
+        XCTAssertTrue(app.staticTexts["61"].waitForExistence(timeout: 5))
+        throwDart(on: app, multiplier: "T", number: "19")
+        XCTAssertTrue(app.staticTexts["4"].waitForExistence(timeout: 5))
+        throwDart(on: app, multiplier: "D", number: "2")
+
+        // 结镖：状态条给出 GAME SHOT，并弹出归属人类的结算（若 AI 先结镖，这里会是「电脑 拿下本局」）
+        XCTAssertTrue(app.staticTexts["GAME SHOT"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["我 拿下本局"].waitForExistence(timeout: 10))
     }
 
     // MARK: - V4 Count Up 8 轮 + 结算页
@@ -120,6 +172,13 @@ final class DartVioUITests: XCTestCase {
     private func throwDart20(on app: XCUIApplication) {
         app.buttons["2"].tap()
         app.buttons["0"].tap()
+        app.buttons["确认"].tap()
+    }
+
+    /// 录指定倍率的一镖（如 T20 / D2）。倍率键在每次投出后会复位成 S，所以每镖都要先点倍率。
+    private func throwDart(on app: XCUIApplication, multiplier: String, number: String) {
+        app.buttons[multiplier].tap()
+        for digit in number { app.buttons[String(digit)].tap() }
         app.buttons["确认"].tap()
     }
 

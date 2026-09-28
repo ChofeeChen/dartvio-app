@@ -8,7 +8,7 @@ struct CountUpPracticeView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("第 \(viewModel.state.currentRoundNumber) / 8 轮")
+                Text("第 \(viewModel.state.currentRoundNumber) / \(CountUpEngineKt.COUNT_UP_ROUNDS) 轮")
                     .font(.subheadline)
                     .foregroundStyle(Palette.textSecondary)
                 Spacer()
