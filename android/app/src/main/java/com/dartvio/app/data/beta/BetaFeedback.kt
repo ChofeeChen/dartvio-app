@@ -129,6 +129,13 @@ object BetaFeedbackAck {
      */
     val items: List<Adopted> = listOf(
         Adopted(
+            date = "2026-09-28",
+            shippedIn = "v0.1.19",
+            source = "真机反馈",
+            what = "**对战页键盘加高 40%**（200dp → 280dp）：五排按键每排从约 36dp 提到约 50dp，" +
+                "此前按键偏矮、容易按错。键盘仍常驻屏幕底部且高度不随回合变化，上方记分表自动吸收这部分增量",
+        ),
+        Adopted(
             date = "2026-09-27",
             shippedIn = "v0.1.18",
             source = "真机反馈",

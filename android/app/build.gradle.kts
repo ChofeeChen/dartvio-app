@@ -13,8 +13,8 @@ import java.util.Properties
  * APK 文件名（发布目录里的那个文件）、以及更新台账三处引用。各写一遍的版本号，
  * 迟早会在某一次发布里三者不一致 —— 而三者不一致时，用户报上来的版本号就没有意义了。
  */
-val appVersionCode = 18
-val appVersionName = "0.1.18"
+val appVersionCode = 19
+val appVersionName = "0.1.19"
 
 /*
  * Beta 试用包的签名材料放在仓库根的 `keystore.properties`（密钥库本体在 `keystore/`）。
