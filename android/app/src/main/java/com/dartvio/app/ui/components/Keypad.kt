@@ -179,6 +179,20 @@ fun DartKeypad(
     val pendingLabel = if (buffer.isNotEmpty()) "${multiplier.label}$buffer" else null
     // 第 3 镖已录入时，确认键变为"结束回合"。
     val isTurnEnd = turnDartsCount >= 3 && buffer.isEmpty()
+    /*
+     * 本回合**镖数已满**：不再接受「再加一支镖」的输入（倍率 / 数字 / 牛眼 / MISS）。
+     *
+     * 2026-09-28 真机反馈：满 3 镖后数字键仍可点，用户会继续录第 4、5 镖，
+     * 而落库侧只收 3 镖 —— 表现成「输入了却没反应」，接着按确认又因为
+     * 缓冲里还有未落定的数字而进不了「结束回合」分支，整页卡住。
+     *
+     * 与 [isTurnEnd] 分开：那个还要看有没有待确认输入（决定确认键显示什么），
+     * 这个只回答「还能不能再加一支镖」，两者口径不同，不能合并。
+     *
+     * ⚠️ 退格键与确认键**不走这个开关**，仍然是 [enabled]：
+     * 第 3 镖录错要能退回来改，满 3 镖后也必须有键能把回合交出去。
+     */
+    val canAddDart = enabled && turnDartsCount < 3
 
     KeypadContainer(modifier = modifier, contentPadding = contentPadding) {
         // ===== R1-R3：左列倍率（S/D/T），右侧三列数字 1-9 =====
@@ -191,7 +205,7 @@ fun DartKeypad(
                 val selected = m == multiplier
                 PadButton(
                     label = m.label,
-                    enabled = enabled,
+                    enabled = canAddDart,
                     accent = if (selected) Primary else SurfaceVariantDark,
                     textColor = if (selected) OnPrimary else TextPrimaryDark,
                     modifier = Modifier.weight(1f).fillMaxSize(),
@@ -200,7 +214,7 @@ fun DartKeypad(
                 digits.forEach { n ->
                     PadButton(
                         label = "$n",
-                        enabled = enabled,
+                        enabled = canAddDart,
                         modifier = Modifier.weight(1f).fillMaxSize(),
                         onClick = { onDigit(n) }
                     )
@@ -215,7 +229,7 @@ fun DartKeypad(
         ) {
             PadButton(
                 label = "BULL\n25",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = TextPrimaryDark,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -223,7 +237,7 @@ fun DartKeypad(
             )
             PadButton(
                 label = "MISS",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = TextSecondaryDark,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -231,10 +245,11 @@ fun DartKeypad(
             )
             PadButton(
                 label = "0",
-                enabled = enabled,
+                enabled = canAddDart,
                 modifier = Modifier.weight(1f).fillMaxSize(),
                 onClick = { onDigit(0) }
             )
+            // 退格保留 [enabled]：满 3 镖后退回一支是纠正，不是「再加一镖」。
             BackspaceButton(
                 enabled = enabled,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -249,7 +264,7 @@ fun DartKeypad(
         ) {
             PadButton(
                 label = "BULL\n50",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = Secondary,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -409,6 +424,12 @@ fun CricketKeypad(
     contentPadding: PaddingValues = PaddingValues(GAP)
 ) {
     val isTurnEnd = turnDartsCount >= 3
+    /*
+     * 与 X01 键盘同一条口径（2026-09-28 真机反馈）：本回合镖数已满后，
+     * 不再接受「再加一支镖」的输入；**退格与确认仍走 [enabled]** ——
+     * 第 3 镖录错要能退回来改，满 3 镖后也必须有键能把回合交出去。
+     */
+    val canAddDart = enabled && !isTurnEnd
 
     KeypadContainer(modifier = modifier, contentPadding = contentPadding) {
         // ===== R1：倍率 + 牛眼 =====
@@ -420,7 +441,7 @@ fun CricketKeypad(
                 val selected = m == multiplier
                 PadButton(
                     label = m.label,
-                    enabled = enabled,
+                    enabled = canAddDart,
                     accent = if (selected) Secondary else SurfaceVariantDark,
                     textColor = if (selected) OnSecondary else TextPrimaryDark,
                     modifier = Modifier.weight(1f).fillMaxSize(),
@@ -429,7 +450,7 @@ fun CricketKeypad(
             }
             PadButton(
                 label = "BULL\n25",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = TextPrimaryDark,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -437,7 +458,7 @@ fun CricketKeypad(
             )
             PadButton(
                 label = "BULL\n50",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = Secondary,
                 modifier = Modifier.weight(1f).fillMaxSize(),
@@ -453,7 +474,7 @@ fun CricketKeypad(
             listOf(20, 19, 18, 17).forEach { n ->
                 PadButton(
                     label = "$n",
-                    enabled = enabled,
+                    enabled = canAddDart,
                     fontSize = 26.sp,
                     modifier = Modifier.weight(1f).fillMaxSize(),
                     onClick = { onNumber(n, multiplier.factor) }
@@ -469,7 +490,7 @@ fun CricketKeypad(
             listOf(16, 15).forEach { n ->
                 PadButton(
                     label = "$n",
-                    enabled = enabled,
+                    enabled = canAddDart,
                     fontSize = 26.sp,
                     modifier = Modifier.weight(1f).fillMaxSize(),
                     onClick = { onNumber(n, multiplier.factor) }
@@ -477,12 +498,13 @@ fun CricketKeypad(
             }
             PadButton(
                 label = "MISS",
-                enabled = enabled,
+                enabled = canAddDart,
                 accent = SurfaceElevated,
                 textColor = TextSecondaryDark,
                 modifier = Modifier.weight(1f).fillMaxSize(),
                 onClick = onMiss
             )
+            // 退格保留 [enabled]：满 3 镖后退回一支是纠正，不是「再加一镖」。
             BackspaceButton(
                 enabled = enabled,
                 modifier = Modifier.weight(1f).fillMaxSize(),

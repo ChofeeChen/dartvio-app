@@ -342,7 +342,8 @@ private fun PlayerScoreCard(
                         "（本机）",
                         fontSize = 9.sp,
                         color = TextSecondaryDark,
-                        maxLines = 1
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
                 if (player.isActive) {
@@ -364,19 +365,39 @@ private fun PlayerScoreCard(
              *
              * PPR 拿不到就不写：写 0.0 会被读成「他很菜」，而真实含义只是「他还没打过正式赛」。
              */
+            /*
+             * 「已赢 N 局 · PPR x.x」这一行**必须锁死单行**（2026-09-28 真机反馈）。
+             *
+             * vivo 机型上字体放大后，左列可用宽度被昵称压到不足，这两个 Text 会**逐字换行** ——
+             * 一行变四行，整张卡片高度失控、往下顶出屏幕；而另一台手机同一版本却显示正常，
+             * 用户看到的就是「两台真机 UI 不同」。
+             *
+             * 用 `softWrap = false` 而不是 Ellipsis：这几个数字很短、信息本身不该省，
+             * 真的放不下时宁可裁掉尾部，也不能让卡片变形把下方的记分表顶走。
+             */
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "已赢 ${player.legsWon} 局",
                     fontSize = 10.sp,
-                    color = TextSecondaryDark
+                    color = TextSecondaryDark,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 val ppr = player.ppr?.takeIf { it > 0.0 }
                 if (ppr != null) {
-                    Text("  ·  ", fontSize = 10.sp, color = TextDisabledDark)
+                    Text(
+                        "  ·  ",
+                        fontSize = 10.sp,
+                        color = TextDisabledDark,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                     Text(
                         "PPR " + String.format(Locale.US, "%.1f", ppr),
                         fontSize = 10.sp,
-                        color = TextSecondaryDark
+                        color = TextSecondaryDark,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -414,11 +435,13 @@ private fun PlayerScoreCard(
                  */
                 if (legPpr != null) {
                     Spacer(Modifier.height(2.dp))
+                    // 同上一行：分数下方这行也必须锁死单行，否则窄屏上同样会逐字竖排。
                     Text(
                         "本局 PPR " + String.format(Locale.US, "%.1f", legPpr),
                         fontSize = 10.sp,
                         color = TextSecondaryDark,
-                        maxLines = 1
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
