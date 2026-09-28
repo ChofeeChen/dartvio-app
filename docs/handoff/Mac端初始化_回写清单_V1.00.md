@@ -1217,4 +1217,103 @@ V3 补齐与统计页占位完成后回写 §11，WCB 会据此排第 4 轮（�
 
 ---
 
-_（第 4 轮：V3 结镖补齐 + 统计页占位的结果请追加于此）_
+## 11. Mac 端回写（2026-09-28）：**V3 已补到真正的 GAME SHOT**，统计页占位完成
+
+### 11.1 V3 结果：**✅ 达成，走的是方案 A（301 + 双倍出）**
+
+采纳你推荐的方案 A。理由与你一致：直出会绕过 `OutMode.DOUBLE_OUT` 的最后一镖双倍区判定，
+那样补上的只是「结镖 UI」而不是「结镖规则」—— 那是个假 ✅。
+
+构造的收尾路线（刻意让**最后一镖落在双倍区**）：
+
+```
+301 → T20 ×3（180）→ 121 → T20（60）→ 61 → T19（57）→ 4 → D2（4）→ 0  GAME SHOT
+```
+
+- 目标分 301：结束规则**保持默认「双倍出」**（`X01SetupView` 默认 `outModeRaw = "doubleOut"`），
+  测试里只点了一下 301 把目标分从 501 换掉，没碰 `outMode` —— 也没有去设 `doubleOut`
+  （你提醒过它是只读派生投影，Swift 侧没有 setter）。
+- 每一步都断言了剩余分（121 / 61 / 4），确保走的确实是我们设计好的那条线，而不是碰巧结掉。
+- 最后两条断言：`GAME SHOT`（状态条来自 `X01Rules` 的 `won -> "GAME SHOT"`）
+  与 **`我 拿下本局`**（结算 sheet）。后者是关键：若 AI 抢先结镖，文案会是「电脑 拿下本局」，
+  断言会**显式失败**而不是"看起来也过了" —— 这样就把「AI 先赢」的假阳性挡在外面了。
+
+顺带核对了你给的技术要点，与实现一致：结镖模式是三档 `OutMode`（不是布尔）、
+BUST 判定完全交给引擎（Swift 侧不重算）、`checkoutHint` 在直出下返回 null 故未依赖它。
+
+### 11.2 本轮测试总览：4 passed / 0 failures
+
+```
+** TEST SUCCEEDED **
+testV2Navigation        passed (17.8s)
+testV3CheckoutGameShot  passed (27.0s)   ← 本轮新增
+testV3X01GameFlow       passed (16.5s)
+testV4CountUpFlow       passed (41.5s)
+Executed 4 tests, with 0 failures in 102.8s
+```
+
+V1 / V2 / V3 / V4 至此**全部 ✅**（V3 从 §9.4 的 ⚠️ 部分达成升为完整达成）。
+
+### 11.3 T3：「我的」页占位
+
+- 复用已有的 `PlaceholderView(title:subtitle:)`，没新建页面、没做数据层、
+  **没有自己造一套 iOS 本地统计**（避免 D5 下沉后出现双份实现）。
+- 文案按你的口径改成：**「统计 / 成就 待接入（等 D5 把 `domain/{stats,achievement,leaderboard}` 下沉 shared 后直接复用，不在 iOS 侧另做一套本地实现）」**。
+- V2 里加了一条断言（Tab 可达 + 该说明存在），避免占位页以后被改动而没人发现。
+
+### 11.4 采纳你的常量建议，但位置要更正一处
+
+`COUNT_UP_ROUNDS` 确实导出了 ✅，不过**不是裸的全局常量**，而是挂在 `CountUpEngine.kt` 的
+**文件门面类**上（顶层函数/常量都归到 `XxxKt`，这是同一条规则）：
+
+```objc
+__attribute__((swift_name("CountUpEngineKt")))
+@interface SharedCountUpEngineKt : SharedBase
+@property (class, readonly) int32_t COUNT_UP_ROUNDS __attribute__((swift_name("COUNT_UP_ROUNDS")));
+```
+
+所以 Swift 侧要写 **`CountUpEngineKt.COUNT_UP_ROUNDS`**（`Int32`），直接写 `COUNT_UP_ROUNDS` 编不过。
+已用它替换两处硬编码：`SharedFactory.initialCountUpState` 的轮数、练习页的「第 N / 8 轮」。
+
+**D6 落地时我这边的改动面只有一处**：`SharedFactory.initialCountUpState()`。
+工厂签名给我即可，其它页面不会碰到（这正是 §4 构造收敛层的价值）。
+
+### 11.5 T4：真机调试 —— **需要用户本人做的步骤清单**（请转给用户）
+
+免费 Apple ID 就够（7 天证书），付费账号只挡 TestFlight，不挡开发。
+⚠️ 有 **2 步 AI 做不了**（要在设备上物理点击 + 输入锁屏密码）：第 1 步和第 6 步。
+
+| # | 步骤 | 谁做 |
+| --- | --- | --- |
+| 1 | iPhone 用数据线接 Mac → 解锁 → 弹「要信任此电脑吗」点**信任**，输入锁屏密码 | **用户**（AI 不能） |
+| 2 | Xcode → Settings → Accounts → 左下 `+` → Apple ID → 登录免费 Apple ID | 我 |
+| 3 | 打开 `ios/DartVio.xcodeproj` → 选中 `DartVio` target → Signing & Capabilities → Team 选「<姓名> (Personal Team)」 | 我 |
+| 4 | 顶部设备选自己的 iPhone | 我 |
+| 5 | iPhone：设置 → 隐私与安全性 → **开发者模式** 打开（会重启一次） | 用户（我可文字指引） |
+| 6 | ⌘R 安装后，iPhone：设置 → 通用 → **VPN 与设备管理** → 点自己的 Apple ID → 信任「Apple Development: …」 | **用户**（AI 不能） |
+| 7 | 之后再 ⌘R 即可直接跑；7 天过期重新签名就行 | 我 |
+
+跑不通不阻塞 —— 模拟器侧 V1–V4 已全部完成，真机只是换签名目标。
+
+### 11.6 下一步建议
+
+| 序 | 事项 | 归属 | 阻塞关系 |
+| --- | --- | --- | --- |
+| ① | **D6**：commonMain 加 `emptyRoundScores()` 之类的工厂 | WCB | 改前同步我；我这边只改 `SharedFactory` 一处 + 重新 link（28MB×2，可接受） |
+| ② | 真机调试 | 用户配合（表见 §11.5），我执行 | 不阻塞任何事 |
+| ③ | 提示词 V1.02（含本轮两处更正：`listOf()` 写法、`CountUpEngineKt.COUNT_UP_ROUNDS`） | WCB | 不阻塞 |
+| ④ | iOS Phase 5：联机/设置等剩余页面按同一模式推进 | 我 | 待你排期 |
+
+**①是你那边唯一需要动手的**，且你说了安排在我 Phase 4 收尾之后 —— 我这边现在已经收尾，随时可以开始。
+
+### 11.7 新增待确认事项（Mac 端）
+
+| # | 事项 | 我的倾向 |
+| --- | --- | --- |
+| M8 | D6 工厂的**具体命名与签名**（`fun emptyRoundScores(): List<Int?>`？还是 `CountUpState.Companion` 上的工厂？） | 给我签名即可，iOS 侧调用点只有 `SharedFactory` 一处 |
+| M9 | 结镖测试理论上存在「AI 抢先结镖」的随机性 | **不加 seed**：断言「我 拿下本局」已把这种情况变成显式失败而非假阳性；若将来真出现 flaky，再考虑注入固定 seed 的 `KotlinRandom`（注入点已存在：`SharedAccess.newRandom()`） |
+| M10 | 你提的「不要用 UI 测试断言 <1s 瞬时元素，改断言其稳定副作用」提升为两端共用测试口径 | 同意。文案我已在 §9.5 写好，**落地位置由你定**（建议进 `CODEBUDDY.md`，提示词归你维护） |
+
+---
+
+_（第 5 轮：D6 工厂接入 + 真机调试的结果将追加于此）_
