@@ -1388,10 +1388,78 @@ Executed 4 tests, with 0 failures
 
 | 序 | 事项 | 归属 | 阻塞关系 |
 | --- | --- | --- | --- |
-| ① | 决定要不要清掉 §12.3 的两处签名配置 | **用户**（在 Xcode 里改，重装一次验证） | 不阻塞其它事；App 现在能跑 |
-| ② | D6：commonMain 加工厂（`emptyRoundScores()` 之类） | WCB | iOS 侧改动面只有 `SharedFactory` 一处 |
-| ③ | 提示词 V1.02（累计两处更正：`listOf()` 写法、`CountUpEngineKt.COUNT_UP_ROUNDS`） | WCB | 不阻塞 |
+| ① | 清掉 §12.3 的两处签名配置（**已完成**，见 §13.1） | Mac | 待用户在真机 ⌘R 复验 |
+| ② | iOS 侧补齐练习 / 训练 / 对抗模式（**已启动**，见 §13.2） | Mac | 引擎齐备，纯 UI 工作量 |
+| ③ | **D6**：commonMain 加工厂（`emptyRoundScores()` 之类） | WCB | iOS 侧改动面只有 `SharedFactory` 一处 |
+| ④ | **D4**：`domain/{stats,achievement,leaderboard}` 下沉 —— **不下沉，iOS 的数据/成就/排行榜 Tab 永远做不出来** | WCB | 阻塞 iOS §13.3 的 B 组 |
+| ⑤ | **D5**：网络层 `net.online` 下沉 —— 阻塞 iOS 整个联机大厅 | WCB | 长期项 |
+| ⑥ | 提示词 V1.02（累计两处更正：`listOf()` 写法、`CountUpEngineKt.COUNT_UP_ROUNDS`） | WCB | 不阻塞 |
 
 ---
 
-_（第 6 轮：D6 工厂接入的结果将追加于此）_
+## 13. Mac 端记录（2026-09-28）：签名清理 + 双端功能对齐启动
+
+### 13.1 签名配置已按 §12.3 清理
+
+target 级 Debug/Release 各删掉 `OTHER_CODE_SIGN_FLAGS = --deep`，Release 删掉固定的
+`CODE_SIGN_IDENTITY = "Apple Distribution"`；项目级两个空的 `OTHER_CODE_SIGN_FLAGS = ""` 一并清掉。
+顺手把 framework 引用的 `path` 从 `build/Frameworks` 改回 `Build/Frameworks`（对齐 `link-shared.sh` 的产出）。
+
+清理后 target 级只剩：
+
+```
+Debug   : CODE_SIGNING_ALLOWED=yes | CODE_SIGN_STYLE=Automatic | DEVELOPMENT_TEAM=P5FGHR787N
+Release : 同上
+```
+
+模拟器四条 UI 测试重跑全绿，说明改 pbxproj 没改坏工程。**真机侧仍需用户 ⌘R 复验一次**。
+
+### 13.2 iOS 补齐的第一个模式：随机结镖（路线学习）
+
+用户提出的期望是**双端功能对齐**，所以从最容易推进、且依赖最干净的一块开始：练习。
+
+新增文件（`Features/Practice/`、`Features/Root/`）：
+
+| 文件 | 作用 |
+| --- | --- |
+| `RandomCheckoutViewModel.swift` | `@Observable` VM，调 `RandomCheckoutRules` / `CheckoutSolver`；attempts / successes 落 UserDefaults，key 与 Android 同名 |
+| `RandomCheckoutPracticeView.swift` | 练习页（目标 / 剩余 / 已投三镖 / 结果条 / 答案开关 / 键盘复用 `KeypadView`） |
+| `RootTabsView.swift`（改） | 练习 Tab 从「只有一项」改成对齐 Android `PracticeSoloScreen` 的**练习中心列表**，未接通的项置灰标「待接入」 |
+
+顺带补 §13.4 记录的三个坑。
+
+新增 V5 UI 测试，全量 5 个测试通过（V2 / V3 结镖 / V3 回合流转 / V4 / V5）。
+
+### 13.3 双端功能盘点结论（对齐的缺口在这）
+
+| Android | iOS 现状 | 依赖是否具备 |
+| --- | --- | --- |
+| X01 对局 + 设置 | ✅ 已有 | — |
+| Count Up 练习 | ✅ 已有 | — |
+| **随机结镖（路线学习）** | ✅ **本轮补上** | — |
+| 极速挑战 + 战报 | ❌ 无 | ✅ `CheckoutRushRules/Session` 已下沉 |
+| 99 Darts | ❌ 无 | ✅ 引擎已下沉（⚠️ Android VM 耦合 `AchievementProgress`） |
+| Cricket MPR 挑战 | ❌ 无 | ✅ 引擎已下沉（⚠️ 同上） |
+| 精准工坊（三连页 + 图表） | ❌ 无 | ✅ `domain.impact.*` 已下沉 |
+| AI 对战练习 | ❌ 无 | ✅ `X01Ai` / `AdaptiveAiController` 已下沉 |
+| 双人对抗训练（6 模式） | ❌ 无 | ✅ `domain.versus.*` 已下沉 |
+| Cricket 正式对局 | ❌ 无 | ✅ `CricketRules` / `CricketAi` 已下沉 |
+| 数据 / 成就 / 排行榜 | ❌ 无（我的 Tab 是占位页） | ❌ **等 WCB D4** |
+| 联机大厅（8 条路由） | ❌ 无 | ❌ **等 WCB D5** |
+| 设置 / 隐私 / 反馈 / Beta 门禁 | ❌ 无 | ⚠️ 多为 `:app` 私有（`data.theme` / `data.beta`） |
+
+一句话：**除统计/成就/排行榜与联机外，其余全部是「iOS 侧写 SwiftUI 直接调现有引擎」，不依赖 WCB。**
+
+### 13.4 本轮踩到 & 记下的坑
+
+1. **工程没开文件系统同步组**（`PBXFileSystemSynchronizedRootGroup` = 0）→ 新建 Swift 文件必须手工往
+   `pbxproj` 里补三处：`PBXFileReference`、`PBXGroup` children、`PBXSourcesBuildPhase`。漏一处就是「文件编译不进去」。
+2. **Kotlin enum 导出后不能靠 `==`**：它是 ObjC 的 class 实例（此处为 `CheckoutResult`），
+   Swift 不会自动合成 `Equatable`，改用 `isEqual`（Kotlin 按 name / ordinal 实现）。
+3. **`new` 前缀方法导出会改名**：Kotlin `RandomCheckoutRules.newTarget` → ObjC `doNewTarget`，
+   同理 §11 记过的 `doNewLeg`。
+4. 练习项文案 `"Count Up 练习"` 是 V2 / V4 两条 UI 测试的定位依据，改 hub 时必须保留（已在代码里加注释警示）。
+
+---
+
+_（第 6 轮：其余练习 / 对抗模式的补齐结果将追加于此）_
