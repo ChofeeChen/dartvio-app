@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE431000000000000000000 /* BoardRender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE430000000000000000000 /* BoardRender.swift */; };
 		200000000000000000000010 /* DartVioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000010 /* DartVioApp.swift */; };
 		200000000000000000000011 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* Palette.swift */; };
 		200000000000000000000012 /* SharedAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* SharedAccess.swift */; };
@@ -64,6 +65,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE430000000000000000000 /* BoardRender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardRender.swift; sourceTree = "<group>"; };
 		100000000000000000000010 /* DartVioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DartVioApp.swift; sourceTree = "<group>"; };
 		100000000000000000000011 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		100000000000000000000012 /* SharedAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAccess.swift; sourceTree = "<group>"; };
@@ -230,7 +232,8 @@
 			children = (
 				10000000000000000000001B /* KeypadView.swift */,
 				10000000000000000000001C /* GameCommon.swift */,
-			);
+							1AE430000000000000000000 /* BoardRender.swift */,
+);
 			path = Components;
 			sourceTree = "<group>";
 		};
@@ -393,7 +396,8 @@
 				200000000000000000000029 /* ImpactReportView.swift in Sources */,
 				20000000000000000000002A /* VersusViewModel.swift in Sources */,
 				20000000000000000000002B /* VersusFlowView.swift in Sources */,
-			);
+							1AE431000000000000000000 /* BoardRender.swift in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		400000000000000000000005 /* Sources */ = {

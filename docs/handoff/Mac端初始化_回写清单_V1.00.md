@@ -1600,3 +1600,86 @@ Executed 12 tests, with 0 failures
 Mac 侧可自行推进的剩下 **Cricket 正式对局**（设置两页 + 对局页，引擎已下沉，纯 UI 工作量）。
 
 _（第 7 轮：Cricket 正式对局与设置页的结果将追加于此）_
+
+---
+
+## 16. 第 7 轮：精准工坊的可视化改造（真实靶 + 热点图 + 建议）
+
+把「练习模式都点亮」这件事往前推一步：从**能玩**到**能看出问题**。
+这一轮全部围绕精准工坊（Impact），其它模块不动。
+
+### 16.1 点选靶：真实比例的局部放大图
+
+三条要求与实现的对应：
+
+| 要求 | 实现 |
+| --- | --- |
+| 矩形框里显示放大后的真实标靶图 | 新增 `Components/BoardRender.swift`：`BoardProjection`（mm ↔ pt）+ `BoardPainter`（真靶绘制）。**所有半径取自 `BoardGeometry`**：牛眼 6.35 / 15.9、三倍 99–107、双倍 162–170、靶半径 170 mm，分区角 18° |
+| 目标格（如 T20）中心与矩形中心重合 | 视窗中心直接取 `IntentTarget.anchorMm()`（= 环中线半径 × 分区角，由 `SECTOR_ORDER` 反查算得） |
+| 切换目标时放大比例不变 | `pxPerMm = 框高 ÷ verticalSpanMm(60)`，**与目标无关**。<br>⚠️ 不能用 `ImpactWindow.spanX`：它按目标半径算弧宽（T20 ≈ 96 mm、D11 小得多），换目标就会变焦，那样「不同目标的散布」根本没法横向比较 |
+| 框高 +40% | 300 pt → **420 pt**（倍率 5 → 7 pt/mm；8 mm 环宽 ⇒ 56 pt，看得清） |
+
+配色照 WDF / BDO 标准靶：单倍区奶白 / 炭黑交替，双三倍环红 / 绿交替，外牛绿、内牛红；
+分区铁丝也画上 —— 「打偏到隔壁」这件事要有铁丝才看得出来。
+
+### 16.2 顺手修掉的一个真 bug
+
+`ImpactMissBand.bandAt(..., density:)` 的 `density` 传成了 **px/mm（≈7）**，
+于是四周的「出框条带」被放大到 280 pt —— 大半块靶都成了出框区。
+正确值就该是 **1.0**：SwiftUI 的布局单位 pt 与 Android 的 dp 同量纲，`BAND_MIN_DP × 1` 正是想要的宽度。
+
+### 16.3 报告页：热点图 + 派生图表 + 建议
+
+核心原则：**KDE 只在 shared 里有一个实现**。`HeatmapGrid.render`（Silverman 分轴带宽的高斯核密度）
+早已在 commonMain，iOS 只负责把 `[0,1]` 的格子画成色块 ——
+自己在 Swift 里再写一遍，带宽 / 归一化 / 取点上限（`MAX_POINTS`）任一项不一致，
+两端就会给出两张不同的图，而「哪张是对的」根本没法用测试判。
+
+| 区块 | 数据来源 | 回答什么问题 |
+| --- | --- | --- |
+| **全靶热点图**（必含） | 绝对 mm 帧，`halfSpan = 180 mm` | 落点整体压在哪一块 |
+| 误差分布热点图 | `(eTan, eRad)` 帧，原点 = 瞄点 | 相对瞄点歪成什么形状；叠加**质心 + R95 圈**（引擎统计量 overlay 在 KDE 上） |
+| 散布方向条 | `sigmaRad` vs `sigmaTan` | 沿半径拉长（力度 / 释放早晚）还是左右飘（站位 / 瞄线）—— 两者练法不同 |
+| 训练建议 | `headline` / `scatterAdvice` / 画像 + `heatPeakText` | 该练什么 |
+
+`heatPeakText` 是**从热点图反算**的：`indexOfMax` + `mmAt` 取 KDE 峰值，
+得到「密集中心偏离瞄点 X mm、偏 xx 方向」—— 比直接取均值更贴近手感中心。
+
+系统提示最少镖数：`ImpactCalculator.MIN_FULL_N`（**不写死 30**）。
+这个门槛是「σ 的相对标准误 ≈ 1/√(2(n−1))」推出来的，引擎改了 UI 必须跟着改，
+否则会出现「UI 说够了、引擎说不够」。达标前和达标后文案不同；**报告随时可看**，
+样本不足时只显示能信的部分（引擎的 `headline` 自己就会说「还需要 N 镖」）。
+
+### 16.4 又踩了一次自己刚总结的坑
+
+配置页用 `navigationDestination(for: ImpactRoute.self)` 处理 `.practice`、
+练习页再用**同一个类型**注册 `.report` —— 结果两级都落在同一栈里，
+`.report` 被外层那个 `if case .practice` 吞掉，推出一个**全白页面**。
+
+这条正好复现了 §15.1 #11 里我给别人写的警告。**结论升级**：
+同一条导航链上不要出现两个 `navigationDestination` 同类型注册。
+现在这条链改用 **destination-based `NavigationLink`** ——
+目标写在按键旁边，读代码就知道点下去去哪，也不存在「下一级是谁取决于注册顺序」的问题。
+
+### 16.5 新增测试与回归
+
+| 测试 | 钉住什么 |
+| --- | --- |
+| `testV13ImpactReportHeatmap` | 最少镖数系统会提示（含门槛数字）；报告在**只有 3 镖时也打得开**；全靶热点图 / 误差热点图 / 建议区三块都在 |
+
+测试里还学到两点（已写进注释）：
+1. **ScrollView 底部的内容不滚到就不会渲染**，XCUITest 只报「找不到」，容易误判成「页面没做」；
+2. 含多个 Text 的容器会被 AX 树提升成文本节点，此时按 `otherElements[identifier]` 查不到，改按标题静态文本定位。
+
+```
+V2 导航 / V3 结镖 / V3 回合流转 / V4 Count Up            passed
+V5 随机结镖 / V6 极速挑战 / V7 99 Darts                  passed
+V8 Cricket MPR / V9 精准工坊 / V10 双人对抗               passed
+V11 对抗键盘约束（Bull） / V12 对抗键盘约束（环游）          passed
+V13 精准工坊改造（最少镖数 / 报告 / 热点图）                passed
+Executed 13 tests, with 0 failures
+```
+
+编译 0 error / 0 warning。
+
+_（第 8 轮：Cricket 正式对局的结果将追加于此）_

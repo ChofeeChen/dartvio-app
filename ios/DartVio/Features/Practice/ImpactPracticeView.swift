@@ -10,19 +10,9 @@ import shared
  * 这里不像 Count Up 那样复用现有 `KeypadView`，是因为**本练习要的是落点坐标而不是得分**：
  * 键盘只能给出「打到哪一格」，而 Impact 分析需要「偏离目标多少毫米」。
  *
- * 坐标换算交给 shared：视图只产出 **归一化坐标**，毫米值由 `ImpactWindow.viewportOf` 给出的视窗换算。
+ * 坐标换算走 `BoardProjection`（见 `BoardRender.swift`）：视图产出**毫米**交给 VM，
+ * 所有半径比例来自 `BoardGeometry`，iOS 侧不抄任何尺寸常量。
  */
-/**
- * 精准工坊的路由（设置 → 练习 → 报告）。
- *
- * 同 `VersusRoute`：两级都用 `Bool` 会让两个 `navigationDestination(for: Bool.self)`
- * 落在同一栈里，「下一级是谁」变成注册顺序的问题。
- */
-private enum ImpactRoute: Hashable {
-    case practice
-    case report
-}
-
 struct ImpactSetupView: View {
 
     @State private var kind: IntentKind = .triple
@@ -37,6 +27,7 @@ struct ImpactSetupView: View {
 
             Picker("意图", selection: $kind) {
                 Text(IntentKind.triple.label).tag(IntentKind.triple)
+                Text(IntentKind.double_.label).tag(IntentKind.double_)
                 Text(IntentKind.singleOuter.label).tag(IntentKind.singleOuter)
                 Text(IntentKind.bull.label).tag(IntentKind.bull)
             }
@@ -60,7 +51,9 @@ struct ImpactSetupView: View {
                 }
             }
 
-            NavigationLink(value: ImpactRoute.practice) {
+            NavigationLink {
+                ImpactPracticeView(kind: kind, sector: sector)
+            } label: {
                 Text("开练（当前：\(IntentTarget(kind: kind, sector: sector).label)）")
                     .font(.headline)
                     .foregroundStyle(Palette.onPrimary)
@@ -75,19 +68,16 @@ struct ImpactSetupView: View {
         .padding()
         .background(Palette.background)
         .navigationTitle("精准工坊")
-        .navigationDestination(for: ImpactRoute.self) { route in
-            if case .practice = route { ImpactPracticeView(kind: kind, sector: sector) }
-        }
     }
 }
 
-/// 练习页：点靶记样本 → 够了就可以开报告。
+/// 练习页：点靶记样本 → 随时可以开报告。
 struct ImpactPracticeView: View {
 
     @State private var viewModel: ImpactPracticeViewModel
-    /// 靶面上的落点标记。**放在这里而不是 pad 内部**：撤销时要点掉最后一个点，
-    /// 否则「撤销」只减计数、画面上的点还在，两边立刻对不上。
-    @State private var marks: [CGPoint] = []
+    /// 靶面上的落点标记（存**毫米**，不存像素）：存在对_pad 内部的话撤销时点不掉，
+    /// 而存像素则在画面尺寸变化时全部错位。
+    @State private var marks: [ImpactPoint] = []
 
     init(kind: IntentKind, sector: Int32) {
         _viewModel = State(initialValue: ImpactPracticeViewModel(kind: kind, sector: sector))
@@ -105,16 +95,24 @@ struct ImpactPracticeView: View {
                     .accessibilityIdentifier("impactCounter")
             }
 
-            ImpactBoardTapPad(viewport: viewModel.viewport, marks: $marks) { xMm, yMm, isMiss in
+            ImpactBoardTapPad(target: viewModel.target, marks: $marks) { xMm, yMm, isMiss in
                 viewModel.record(xMm: xMm, yMm: yMm, isMiss: isMiss)
             }
+
+            Text(viewModel.sampleHintText)
+                .font(.caption)
+                .foregroundStyle(viewModel.dartsToGo == 0 ? Palette.primary : Palette.textMuted)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier("impactSampleHint")
 
             HStack(spacing: 12) {
                 outlinedButton("撤销") {
                     viewModel.undoLast()
                     if marks.count > viewModel.throwCount { marks.removeLast() }
                 }
-                NavigationLink(value: ImpactRoute.report) {
+                NavigationLink {
+                    ImpactReportView(viewModel: viewModel)
+                } label: {
                     Text("查看报告")
                         .font(.headline)
                         .foregroundStyle(Palette.onPrimary)
@@ -129,9 +127,6 @@ struct ImpactPracticeView: View {
         .padding()
         .background(Palette.background)
         .navigationTitle("精准工坊")
-        .navigationDestination(for: ImpactRoute.self) { route in
-            if case .report = route { ImpactReportView(viewModel: viewModel) }
-        }
     }
 
     private func outlinedButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -147,32 +142,57 @@ struct ImpactPracticeView: View {
 }
 
 /**
- * 自绘的点选靶：把 tap 的归一化坐标换算成毫米，命中判定交给 `ImpactMissBand`。
+ * 点选靶：**真实比例**的标准硬式靶局部放大图。
  *
- * 视窗是 **center ± span/2** 的矩形；坐标系 y 轴向上，所以纵向要做一次翻转。
+ * 三条硬要求，逐条对应：
+ * 1. **目标格居中** —— 视窗中心直接取 `IntentTarget.anchorMm()`，所以切到 T20 时 T20 格正好在框中心；
+ * 2. **切目标不变倍率** —— `pxPerMm` 只由「框高 ÷ [verticalSpanMm]」决定，与半径无关。
+ *    ⚠️ 不能取 `ImpactWindow.spanX`：它按目标半径算弧宽，换目标就会变焦，
+ *    那样「T20 与 D11 的散布」根本没法横向比较；
+ * 3. **比例照真实靶** —— 全部半径 / 角度来自 `BoardGeometry`（见 `BoardRender.swift`）。
  */
 struct ImpactBoardTapPad: View {
 
-    let viewport: BoardViewport
-    /// 落点标记由宿主持有（撤销时要能点掉最后一个点），见 `ImpactPracticeView.marks`。
-    @Binding var marks: [CGPoint]
+    let target: IntentTarget
+    @Binding var marks: [ImpactPoint]
     let onTap: (Double, Double, Bool) -> Void
+
+    /** 框的下边沿到上边沿（含边框）覆盖的毫米跨度。**常数** ⇒ 放大倍率与目标无关。 */
+    static let verticalSpanMm = 60.0
+    /** 框高：原 300 pt 抬到 420 pt（+40%）。倍率随之从 5 pt/mm 升到 7 pt/mm，8 mm 环宽 ⇒ 56 pt，看得清。 */
+    static let height: CGFloat = 420
 
     var body: some View {
         GeometryReader { geo in
+            let size = geo.size
+            let pxPerMm = max(1, size.height / CGFloat(Self.verticalSpanMm))
+            let anchor = target.anchorMm()
+            let centerMm = CGPoint(x: anchor.x, y: anchor.y)
+            let projection = BoardProjection(size: size, centerMm: centerMm, pxPerMm: pxPerMm)
+
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Palette.surfaceVariant)
-                targetRings(size: geo.size)
-                ForEach(Array(marks.enumerated()), id: \.offset) { _, point in
+                DartBoardCanvas(
+                    centerMm: centerMm,
+                    pxPerMm: pxPerMm,
+                    highlightSector: target.kind == IntentKind.bull ? nil : Int(target.sector)
+                )
+
+                aimCrosshair(center: projection.point(xMm: anchor.x, yMm: anchor.y))
+
+                ForEach(marks.indices, id: \.self) { index in
+                    let point = marks[index]
                     Circle()
-                        .fill(Palette.accent)
+                        .fill(point.isMiss ? Palette.error : Palette.accent)
                         .frame(width: 8, height: 8)
-                        .position(point)
+                        .position(projection.point(xMm: point.xMm, yMm: point.yMm))
                 }
-                Text("点一下=记一次落点")
+
+                Text("点一下 = 记一次落点 · 四周条带 = 出框")
                     .font(.caption)
-                    .foregroundStyle(Palette.textMuted)
+                    .foregroundStyle(Palette.textPrimary)
+                    .padding(6)
+                    .background(.black.opacity(0.45))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     .padding(.bottom, 8)
             }
@@ -183,43 +203,64 @@ struct ImpactBoardTapPad: View {
             .accessibilityIdentifier("impactPad")
             .accessibilityLabel("记镖靶面")
             .onTapGesture { location in
-                marks.append(location)
-                let width = Double(geo.size.width)
-                let height = Double(geo.size.height)
-                let u = Double(location.x) / width
-                let v = Double(location.y) / height
-
-                // 视窗是 center ± span/2 的矩形，y 轴向上 → 纵向翻转一次。
-                let xMm = viewport.centerXMm + (u - 0.5) * viewport.spanXMm
-                let yMm = viewport.centerYMm + (0.5 - v) * viewport.spanYMm
-
-                // 命中判定交给 shared：`bandAt` 返回 nil = 落在目标扇区内，否则是某一档脱靶。
-                let density = Float(width / viewport.spanXMm)
-                let band = ImpactMissBand.shared.bandAt(
-                    xPx: Float(location.x),
-                    yPx: Float(location.y),
-                    widthPx: Float(width),
-                    heightPx: Float(height),
-                    density: density
-                )
-                onTap(xMm, yMm, band != nil)
+                record(location: location, size: size, projection: projection)
             }
         }
-        .frame(height: 300)
+        .frame(height: Self.height)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func targetRings(size: CGSize) -> some View {
-        let side = min(size.width, size.height)
-        return ZStack {
-            ForEach([0.30, 0.55, 0.80], id: \.self) { ratio in
-                Circle()
-                    .stroke(Palette.divider, lineWidth: 1)
-                    .frame(width: side * ratio, height: side * ratio)
-            }
+    private func aimCrosshair(center: CGPoint) -> some View {
+        ZStack {
             Circle()
-                .fill(Palette.primary.opacity(0.35))
-                .frame(width: side * 0.12, height: side * 0.12)
+                .stroke(Palette.primary, lineWidth: 2)
+                .frame(width: 26, height: 26)
+            Path { path in
+                path.move(to: CGPoint(x: center.x - 18, y: center.y))
+                path.addLine(to: CGPoint(x: center.x + 18, y: center.y))
+                path.move(to: CGPoint(x: center.x, y: center.y - 18))
+                path.addLine(to: CGPoint(x: center.x, y: center.y + 18))
+            }
+            .stroke(Palette.primary.opacity(0.8), lineWidth: 1)
         }
+        .position(center)
     }
 
+    private func record(location: CGPoint, size: CGSize, projection: BoardProjection) {
+        let tapped = projection.mm(at: location)
+
+        // ⚠️ density 传 1.0：SwiftUI 的布局单位就是 pt，与 Android 的 dp 同量纲，
+        // 所以 `BAND_MIN_DP × 1` 直接就是想要的条带宽度。早先传的是 px/mm（≈7），
+        // 条带被放大到 280 pt —— 大半块靶都成了「出框区」。
+        let band = ImpactMissBand.shared.bandAt(
+            xPx: Float(location.x),
+            yPx: Float(location.y),
+            widthPx: Float(size.width),
+            heightPx: Float(size.height),
+            density: 1.0
+        )
+
+        if let band {
+            // 出框点仍要落到 mm 上才能进数据库与热点图：clamp + 外推的口径由引擎给。
+            let viewport = BoardViewport(
+                centerXMm: projection.centerMm.x,
+                centerYMm: projection.centerMm.y,
+                spanXMm: Double(size.width) / Double(projection.pxPerMm),
+                spanYMm: Double(size.height) / Double(projection.pxPerMm)
+            )
+            let point = ImpactMissBand.shared.missPointMm(
+                viewport: viewport,
+                xMm: tapped.x,
+                yMm: tapped.y,
+                hit: band
+            )
+            let sample = ImpactPoint(xMm: point.x, yMm: point.y, isMiss: true)
+            marks.append(sample)
+            onTap(point.x, point.y, true)
+        } else {
+            let sample = ImpactPoint(xMm: tapped.x, yMm: tapped.y, isMiss: false)
+            marks.append(sample)
+            onTap(tapped.x, tapped.y, false)
+        }
+    }
 }

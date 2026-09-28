@@ -341,6 +341,56 @@ final class DartVioUITests: XCTestCase {
         XCTAssertFalse(app.buttons["BULL"].isEnabled, "环游类不开牛眼")
     }
 
+    /**
+     * 精准工坊改造后的验收：真实比例放大靶 + 最少镖数提示 + 随时可看的报告。
+     *
+     * 三条要求都能在这条里验：
+     * - 「最少 \(N) 镖」由引擎的 `ImpactCalculator.MIN_FULL_N` 给出 ⇒ 断言**包含数字**，
+     *   写死 30 会在引擎调门槛时假失败，写死文案又会漏掉「提示根本没显示」；
+     * - 报告在样本不足时也必须能打开（用户要求「随时查看」），所以只投 3 镖就点进去；
+     * - 热点图 / 误差图 / 建议区三块都必须存在 —— 它们是这次报告页的骨架。
+     */
+    func testV13ImpactReportHeatmap() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "精准工坊")).firstMatch.tap()
+        app.buttons["impactStart"].tap()
+
+        let pad = app.otherElements["impactPad"]
+        XCTAssertTrue(pad.waitForExistence(timeout: 10))
+
+        let hint = app.staticTexts["impactSampleHint"]
+        XCTAssertTrue(hint.waitForExistence(timeout: 5))
+        XCTAssertTrue(hint.label.contains("最少需要"), "应提示报告所需的最少镖数，实得：\(hint.label)")
+        XCTAssertTrue(hint.label.contains(String(viewModelMinDarts)), "门槛数字应来自引擎常量")
+
+        // 三镖不同落点：热点图要有东西可算
+        for fraction: CGFloat in [0.5, 0.62, 0.38] {
+            pad.coordinate(withNormalizedOffset: CGVector(dx: fraction, dy: 0.5)).tap()
+        }
+        XCTAssertTrue(app.staticTexts["impactCounter"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["impactCounter"].label.contains("投 3 镖"))
+
+        app.buttons["impactReport"].tap()
+        let board = app.otherElements["impactHeatBoard"]
+        if !board.exists { dumpUI(on: app, tag: "V13-report") }
+        XCTAssertTrue(board.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.otherElements["impactHeatError"].waitForExistence(timeout: 5))
+
+        // 建议区在 ScrollView 最底下：**没滚到就不会被渲染**，XCUITest 也就查不到它
+        //（没有报错、只是找不到，很容易误判成「页面没做」）。
+        let scroll = app.scrollViews.firstMatch
+        scroll.swipeUp()
+        scroll.swipeUp()
+        // 建议区里有多个 Text，SwiftUI 会把它整块提升成文本节点而不是 otherElement，
+        // 所以按它自己的标题文本定位（而不是夸 identifier 一定能查到）。
+        XCTAssertTrue(app.staticTexts["训练建议"].waitForExistence(timeout: 5))
+    }
+
+    /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
+    private let viewModelMinDarts = 30
+
     // MARK: - 辅助
 
     /// 录一镖 20：数字 2、0 进 buffer，确认投出（KeypadView 的录入语义）。
