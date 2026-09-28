@@ -24,7 +24,7 @@ Android 端继续 Jetpack Compose，**iOS 端由你负责：Swift + SwiftUI 原�
 - **Mac = iOS 开发 / 出包**，Apple 证书 / `.p12` / `.mobileprovision` 只留在 Mac，**绝不提交进仓库**（`.gitignore` 已排除，但别用 `-f` 强加）。
 - 两端共用**同一套 versionCode**：唯一出处是 `android/app/build.gradle.kts` 顶部的 `appVersionCode`（当前 **18**，`versionName = 0.1.18`）。iOS 侧 `CFBundleShortVersionString = 0.1.<code>`。**不要**在 Mac 上另立版本号。
 
-**第一步先做这件事**：读仓库根的 `CODEBUDDY.md`（项目单一上下文入口）和 `docs/prd/T7_双机双平台迁移准备清单_V1.05.md`，了解全局后再动手。
+**第一步先做这件事**：读仓库根的 `CODEBUDDY.md`（项目单一上下文入口）和 `docs/prd/T7_双机双平台迁移准备清单_V1.06.md`，了解全局后再动手。
 
 ## 1. 拉代码
 
