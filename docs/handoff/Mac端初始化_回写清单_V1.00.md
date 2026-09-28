@@ -1535,4 +1535,68 @@ Executed 10 tests, with 0 failures
 
 ---
 
-_（第 6 轮：Cricket 正式对局与设置页的结果将追加于此）_
+---
+
+## 15. 第 6 轮：全模式补齐后的 bug 修复与优化
+
+练习 8 张卡与双人对抗 6 模式全部点亮之后做的一轮**收敛**：先跑全量 UI 测试，
+再逐条修「测试没覆盖到、但用起来就是不对」的地方。本轮不改功能范围，只修缺陷。
+
+### 15.1 修复清单
+
+| # | 缺陷 | 表现 | 修法 |
+| --- | --- | --- | --- |
+| 1 | **对抗键盘不受引擎约束** | Bull 之争里能点 T20、环游三镖里能点任意扇区，点下去一律记 0 分 | `KeypadView` 新增 `layout: KeyboardLayout?`，由 `VersusRule.inputFilter(state:)` 逐状态给出；不可点的键**置灰 + disabled**，而不是点了记 0 分 |
+| 2 | **对抗目标分传成了 0** | 引擎 `score >= target`，0 分目标 ⇒ **第一镖就判获胜**（V10 取证转储：「三镖 MISS」直接「选手 1 获胜」） | 目标分改为「取值那一刻兜底」：`effectiveTargetScore = targetScore > 0 ? targetScore : rule.defaultConfig().targetScore`，不依赖 `onAppear` 的时序 |
+| 3 | 目标分候选写死 10/20/30/50 | 倍区竞赛的推荐值 30 与候选 20/30/50/100 都被覆盖 | 候选取 `BullBattleRule.shared.TARGET_CHOICES` / `RingRaceRule.shared.TARGET_CHOICES`，默认取 `defaultConfig().targetScore`；**抄一份字面量必然与引擎脱节** |
+| 4 | **战报页返回即重弹** | `navigationDestination(isPresented: Binding(get: { phase == .finished }, set: { _ in }))`：返回后 `get` 仍为 true，SwiftUI 立刻再推一次 | 改成本地 `@State reportPresented`，`onChange(of: phase)` 单向驱动；战报页加「再练一场」（`restartSession()`） |
+| 5 | **极速挑战计时器不走** | `elapsedMs` 只在投镖时固化，不投镖时时间静止 —— 限时模式等于没计时 | 展示口径改为按 `startedAt` 现算（`currentElapsedMs`），视图用 `TimelineView(.periodic(by: 0.1))` + `monospacedDigit()` 重绘；落记录仍用固化值 |
+| 6 | **精准工坊撤销后命中率错位** | `ImpactFrame` 不携带「是否脱靶」，撤销靠 `frames.count` 反推 ⇒ 撤了命中镖却减 `outCount`，越撤越离谱 | 并行维护 `missFlags: [Bool]`，撤销时 pop 决定减哪一个 |
+| 7 | 撤销后靶面落点还在 | 点数减了、画面上的点没掉 | `marks` 从 pad 内部提到 `ImpactPracticeView`（`@Binding`），撤销时同步 `removeLast()` |
+| 8 | 键盘 "0" 死区 | 单独按 0 进 buffer，`confirm()` 既不投镖也不回调，按钮像坏了 | 输入时要求 `1...20`（禁止 leading zero）；「确认」按钮在未输入且宿主没接 `onConfirm` 时置灰不可用 |
+| 9 | `onConfirm: { }` 空闭包 | 极速/随机结镖/对抗页的「记一镖」点了毫无反应 | `onConfirm` 改为**可选**闭包，不传即禁用按钮 |
+| 10 | 强制解包与越界 | `pair.first as! BattleState`、`players[Int(winnerIndex)]`（`winnerIndex` 来自引擎，老存档可能越界） | 全部改为 `guard let` + 下标安全取名字 |
+| 11 | `navigationDestination(for: Bool.self)` **两级重复注册** | 配置页与对局页各注册一次同类型，「下一级是谁」取决于注册顺序，改顺序就串页 | 引入 `VersusRoute` / `ImpactRoute` 两个私有 enum，路由值类型化 |
+| 12 | 加赛 Bull 时镖位显示 3 格 | `dartsPerRound` 在加赛阶段是 1，写死 3 会多出两个永远填不上的空格 | 用 `state.dartsPerRound` / `state.dartNoInRound`（引擎给的口径） |
+
+### 15.2 新增的坑（接 §14.5）
+
+| 现象 | 正确写法 |
+| --- | --- |
+| `NSArray<SharedInt *>` → `[Int32]` | **`$0.int32Value`**（`intValue` 得到 `Int`，与 `Int32` 不互通，编译器不隐式转换） |
+| `KotlinPair.first` 的强转 | Swift 侧已特化成 `BattleState?`，`as? BattleState` 会被判为「冗余转换」，直接 `guard let next = pair.first` |
+| Kotlin `Int?` 字段 | `winnerIndex` 是 `KotlinInt?`（NSNumber）→ `winner.intValue`；而 `DartEvent.Win.playerIndex` 是 **Int32**，两者不适用同一写法 |
+| `Int(truncating:)` 的误用 | 它只吃 `NSNumber`，对 Int32 参数报「cannot convert」；Int32 直接 `Int(x)` |
+| `switch` 穷尽后仍写 `default` | 触发 `default will never be executed` warning；穷尽时直接删 `default`（同时删掉随之不再可达的 `unreachablePlaceholder`） |
+| `KotlinLong? as? NSNumber` | 触发「conditional downcast ... equivalent to implicit conversion」warning；`SharedLong : NSNumber`，直接 `guard let millis` 后取 `doubleValue` |
+| `@Binding` 的参数顺序 | 结构体成员顺序决定默认 init 标签顺序；把 `@Binding` 放在闭包参数**之前**才能用尾随闭包写法 |
+
+### 15.3 新增测试
+
+| 测试 | 钉住的东西 |
+| --- | --- |
+| `testV11VersusKeyboardFilter` | Bull 之争：扇区键与倍率键 `isEnabled == false`，MISS / BULL 可用 |
+| `testV12VersusClockKeyboardFilter` | 环游三镖：只开「当前目标分区」（开局 1 分区），环带不限、牛眼关闭 |
+
+为什么要单独写这两条：`inputFilter` 的接线一旦断掉，UI 会退回「什么键都能点、点错记 0 分」，
+而**任何一条既有测试都不会失败**（V10 用的是 MISS，恰好在所有模式里都可点）。
+所以这类「退化但不报错」的接线，必须靠 `isEnabled` 断言钉住。
+
+### 15.4 回归结果
+
+```
+V2 导航 / V3 结镖 / V3 回合流转 / V4 Count Up            passed
+V5 随机结镖 / V6 极速挑战 / V7 99 Darts                  passed
+V8 Cricket MPR / V9 精准工坊 / V10 双人对抗               passed
+V11 对抗键盘约束（Bull） / V12 对抗键盘约束（环游）          passed
+Executed 12 tests, with 0 failures
+```
+
+编译：**0 error / 0 warning**（仅剩 Xcode 对 build script 未声明 outputs 的通用提示）。
+
+### 15.5 下一步（不变）
+
+阻塞项仍是 §14.6 那张表：数据 / 成就 / 排行榜等 **WCB D4**、联机大厅等 **WCB D5**。
+Mac 侧可自行推进的剩下 **Cricket 正式对局**（设置两页 + 对局页，引擎已下沉，纯 UI 工作量）。
+
+_（第 7 轮：Cricket 正式对局与设置页的结果将追加于此）_

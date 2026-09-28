@@ -9,6 +9,9 @@ import SwiftUI
 struct CheckoutRushPracticeView: View {
 
     @State private var viewModel: CheckoutRushViewModel
+    /// 战报是否推出。必须是**本地状态**：用 `Binding(get: { phase == .finished }, set: { _ in })` 时
+    /// 从战报返回后 get 仍为 true，SwiftUI 会立刻再推一次 —— 表现为「点返回又跳回战报」。
+    @State private var reportPresented = false
 
     init(difficulty: RushDifficulty = .mixed) {
         _viewModel = State(initialValue: CheckoutRushViewModel(difficulty: difficulty))
@@ -34,25 +37,31 @@ struct CheckoutRushPracticeView: View {
             KeypadView(
                 confirmTitle: "投镖",
                 onDart: { viewModel.addDart($0) },
-                onUndo: { viewModel.undoLastDart() },
-                onConfirm: { }
+                onUndo: { viewModel.undoLastDart() }
             )
         }
         .background(Palette.background)
         .navigationTitle("极速挑战")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Text("第 \(viewModel.questionIndex) / \(viewModel.totalQuestions) 题 · \(viewModel.elapsedSecondsText)")
-                    .font(.caption)
-                    .foregroundStyle(Palette.textMuted)
-                    .accessibilityIdentifier("rushProgress")
+                // 计时必须**自己走**：只在投镖时刷新等于没有计时（限时模式的计时器不走是硬伤）。
+                // 0.1s 一跳，配 `monospacedDigit()` 免得数字宽度抖动把题号顶来顶去。
+                TimelineView(.periodic(from: .now, by: 0.1)) { _ in
+                    Text("第 \(viewModel.questionIndex) / \(viewModel.totalQuestions) 题 · \(viewModel.elapsedSecondsText)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(Palette.textMuted)
+                        .accessibilityIdentifier("rushProgress")
+                }
             }
         }
-        .navigationDestination(isPresented: Binding(
-            get: { viewModel.phase == .finished },
-            set: { _ in }
-        )) {
-            CheckoutRushReportView(viewModel: viewModel)
+        .navigationDestination(isPresented: $reportPresented) {
+            CheckoutRushReportView(viewModel: viewModel) {
+                viewModel.restartSession()
+                reportPresented = false
+            }
+        }
+        .onChange(of: viewModel.phase) { _, phase in
+            if case .finished = phase { reportPresented = true }
         }
     }
 

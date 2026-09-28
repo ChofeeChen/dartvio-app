@@ -27,8 +27,7 @@ struct CricketMprPracticeView: View {
             KeypadView(
                 confirmTitle: "投镖",
                 onDart: { viewModel.record($0) },
-                onUndo: { viewModel.undo() },
-                onConfirm: { }
+                onUndo: { viewModel.undo() }
             )
         }
         .background(Palette.background)

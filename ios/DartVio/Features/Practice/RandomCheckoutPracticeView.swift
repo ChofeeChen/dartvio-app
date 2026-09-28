@@ -26,8 +26,7 @@ struct RandomCheckoutPracticeView: View {
             KeypadView(
                 confirmTitle: "投镖",
                 onDart: { viewModel.throwDart($0) },
-                onUndo: { viewModel.retry() },
-                onConfirm: { }
+                onUndo: { viewModel.retry() }
             )
         }
         .background(Palette.background)

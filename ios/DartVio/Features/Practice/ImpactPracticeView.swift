@@ -12,6 +12,17 @@ import shared
  *
  * 坐标换算交给 shared：视图只产出 **归一化坐标**，毫米值由 `ImpactWindow.viewportOf` 给出的视窗换算。
  */
+/**
+ * 精准工坊的路由（设置 → 练习 → 报告）。
+ *
+ * 同 `VersusRoute`：两级都用 `Bool` 会让两个 `navigationDestination(for: Bool.self)`
+ * 落在同一栈里，「下一级是谁」变成注册顺序的问题。
+ */
+private enum ImpactRoute: Hashable {
+    case practice
+    case report
+}
+
 struct ImpactSetupView: View {
 
     @State private var kind: IntentKind = .triple
@@ -49,7 +60,7 @@ struct ImpactSetupView: View {
                 }
             }
 
-            NavigationLink(value: true) {
+            NavigationLink(value: ImpactRoute.practice) {
                 Text("开练（当前：\(IntentTarget(kind: kind, sector: sector).label)）")
                     .font(.headline)
                     .foregroundStyle(Palette.onPrimary)
@@ -64,8 +75,8 @@ struct ImpactSetupView: View {
         .padding()
         .background(Palette.background)
         .navigationTitle("精准工坊")
-        .navigationDestination(for: Bool.self) { _ in
-            ImpactPracticeView(kind: kind, sector: sector)
+        .navigationDestination(for: ImpactRoute.self) { route in
+            if case .practice = route { ImpactPracticeView(kind: kind, sector: sector) }
         }
     }
 }
@@ -74,6 +85,9 @@ struct ImpactSetupView: View {
 struct ImpactPracticeView: View {
 
     @State private var viewModel: ImpactPracticeViewModel
+    /// 靶面上的落点标记。**放在这里而不是 pad 内部**：撤销时要点掉最后一个点，
+    /// 否则「撤销」只减计数、画面上的点还在，两边立刻对不上。
+    @State private var marks: [CGPoint] = []
 
     init(kind: IntentKind, sector: Int32) {
         _viewModel = State(initialValue: ImpactPracticeViewModel(kind: kind, sector: sector))
@@ -91,13 +105,16 @@ struct ImpactPracticeView: View {
                     .accessibilityIdentifier("impactCounter")
             }
 
-            ImpactBoardTapPad(viewport: viewModel.viewport) { xMm, yMm, isMiss in
+            ImpactBoardTapPad(viewport: viewModel.viewport, marks: $marks) { xMm, yMm, isMiss in
                 viewModel.record(xMm: xMm, yMm: yMm, isMiss: isMiss)
             }
 
             HStack(spacing: 12) {
-                outlinedButton("撤销") { viewModel.undoLast() }
-                NavigationLink(value: true) {
+                outlinedButton("撤销") {
+                    viewModel.undoLast()
+                    if marks.count > viewModel.throwCount { marks.removeLast() }
+                }
+                NavigationLink(value: ImpactRoute.report) {
                     Text("查看报告")
                         .font(.headline)
                         .foregroundStyle(Palette.onPrimary)
@@ -112,8 +129,8 @@ struct ImpactPracticeView: View {
         .padding()
         .background(Palette.background)
         .navigationTitle("精准工坊")
-        .navigationDestination(for: Bool.self) { _ in
-            ImpactReportView(viewModel: viewModel)
+        .navigationDestination(for: ImpactRoute.self) { route in
+            if case .report = route { ImpactReportView(viewModel: viewModel) }
         }
     }
 
@@ -137,8 +154,9 @@ struct ImpactPracticeView: View {
 struct ImpactBoardTapPad: View {
 
     let viewport: BoardViewport
+    /// 落点标记由宿主持有（撤销时要能点掉最后一个点），见 `ImpactPracticeView.marks`。
+    @Binding var marks: [CGPoint]
     let onTap: (Double, Double, Bool) -> Void
-    @State private var marks: [CGPoint] = []
 
     var body: some View {
         GeometryReader { geo in

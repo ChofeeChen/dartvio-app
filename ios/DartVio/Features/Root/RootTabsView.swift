@@ -63,7 +63,6 @@ struct PracticeEntryView: View {
             switch self {
             case .countUp, .randomCheckout, .checkoutRush, .ninetyNine,
                  .cricketMpr, .impact, .aiPractice, .versus: return true
-            default: return false
             }
         }
     }
@@ -104,7 +103,6 @@ struct PracticeEntryView: View {
                 difficultyRaw: "advanced"
             ))
             case .versus: VersusListView()
-            default: unreachablePlaceholder(mode)
             }
         }
     }
@@ -128,9 +126,6 @@ struct PracticeEntryView: View {
         .padding(.vertical, 4)
     }
 
-    private func unreachablePlaceholder(_ mode: PracticeMode) -> some View {
-        PlaceholderView(title: mode.rawValue, subtitle: "该模式尚未在 iOS 侧接入")
-    }
 }
 
 struct PlaceholderView: View {

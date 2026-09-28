@@ -1,5 +1,3 @@
-import shared
-
 import Foundation
 import shared
 
@@ -75,9 +73,23 @@ final class CheckoutRushViewModel {
         currentTarget.preferredRoute.map(DartText.label).joined(separator: " → ")
     }
 
-    var elapsedSecondsText: String {
-        String(format: "%.1fs", Double(elapsedMs) / 1000)
+    func secondsText(_ millis: Int64) -> String {
+        String(format: "%.1fs", Double(millis) / 1000)
     }
+
+    /**
+     * **正在走**的用时。
+     *
+     * `elapsedMs` 只在投镖那一刻固化（`tick()`），是给 `RushAttemptRecord.throwElapsedMs` 用的；
+     * 拿它去显示就变成「不投镖时间不走」—— 对一个限时模式来说等于没有计时。
+     * 所以展示口径按 `startedAt` 现算，由视图层定期重绘（见 `CheckoutRushPracticeView`）。
+     */
+    var currentElapsedMs: Int64 {
+        guard let startedAt else { return 0 }
+        return Int64(Date().timeIntervalSince(startedAt) * 1000)
+    }
+
+    var elapsedSecondsText: String { secondsText(currentElapsedMs) }
 
     // MARK: - 动作
 
@@ -143,9 +155,26 @@ final class CheckoutRushViewModel {
     }
 
     private func finish() {
+        // 收尾时也固化一次：本页之后不再计时，展示要停在最后一眼看到的值上。
+        tick()
         // statistics.of 要求按 createdAt 升序传入 —— 记录本来就是顺序 append 的。
         statistics = CheckoutRushStatistics.companion.of(records: records)
         phase = .finished
+    }
+
+    /// 战报页的「再练一场」：把整场重置回第 1 题，题面也重新抽。
+    func restartSession() {
+        questionIndex = 1
+        darts = []
+        outcome = nil
+        showRouteHint = false
+        phase = .solving
+        records = []
+        recentTargets = []
+        statistics = CheckoutRushStatistics.companion.empty()
+        drawTarget()
+        startedAt = Date()
+        elapsedMs = 0
     }
 
     private func drawTarget() {

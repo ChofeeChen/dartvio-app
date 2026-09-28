@@ -285,9 +285,60 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 10))
         for _ in 0..<3 { app.buttons["MISS"].tap() }
         let endRound = app.buttons["versusEndRound"]
+        // 三镖录满后「结算本轮」就该出现；没出现时转储真实 UI，
+        // 以便区分「引擎没记上镖」与「按钮被键盘约束禁掉了」。
+        if !endRound.exists { dumpUI(on: app, tag: "V10-after-darts") }
         XCTAssertTrue(endRound.waitForExistence(timeout: 5))
         endRound.tap()
         XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 5))
+    }
+
+    // MARK: - 键盘约束（引擎 inputFilter → UI）
+
+    /**
+     * 六个对抗模式能点的键**不一样**，且由引擎的 `VersusRule.inputFilter` 逐状态给出：
+     * Bull 之争只开牛眼与 MISS，环游三镖只开当前目标分区。
+     *
+     * 这条测试钉的是「引擎说的约束真的落到了键盘上」—— 一旦接线断掉，
+     * UI 会退回「什么键都能点、点错了记 0 分」，而**这种退化不会让任何一条既有测试失败**
+     *（V10 用 MISS，恰好在所有模式里都可点）。所以必须单独有一条断言 `isEnabled`。
+     */
+    func testV11VersusKeyboardFilter() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
+
+        // Bull 之争：扇区键与倍率键全关，只留牛眼与 MISS
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Bull 之争")).firstMatch.tap()
+        app.buttons["versusStart"].tap()
+        XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["2"].isEnabled, "Bull 之争不该能点扇区键")
+        XCTAssertFalse(app.buttons["T"].isEnabled, "Bull 之争不该能点倍率键")
+        XCTAssertTrue(app.buttons["MISS"].isEnabled)
+        XCTAssertTrue(app.buttons["BULL"].isEnabled)
+    }
+
+    /**
+     * 环游三镖的约束**随回合变化**，所以这条钉的是另一半：只开「当前目标分区」（开局是 1 分区），
+     * 但环带不限（S/D/T 都能点）。与 V11 合起来才覆盖 `inputFilter` 的两种形态。
+     */
+    func testV12VersusClockKeyboardFilter() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
+
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "环游三镖")).firstMatch.tap()
+        app.buttons["versusStart"].tap()
+        XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["versusCaption"].label.contains("打 1 分区"))
+
+        XCTAssertTrue(app.buttons["1"].isEnabled, "环游三镖应只能点当前目标分区")
+        XCTAssertFalse(app.buttons["0"].isEnabled)
+        XCTAssertFalse(app.buttons["2"].isEnabled)
+        XCTAssertTrue(app.buttons["S"].isEnabled, "环游类不限环带")
+        XCTAssertFalse(app.buttons["BULL"].isEnabled, "环游类不开牛眼")
     }
 
     // MARK: - 辅助

@@ -11,6 +11,8 @@ import SwiftUI
 struct CheckoutRushReportView: View {
 
     let viewModel: CheckoutRushViewModel
+    /** 「再练一场」：由宿主把整场重置（它持有 VM，也负责把本页 dismiss 掉）。 */
+    let onRestart: () -> Void
 
     var body: some View {
         ScrollView {
@@ -37,6 +39,17 @@ struct CheckoutRushReportView: View {
                     statRow("最快成功", secondsText(viewModel.statistics.fastestUnhintedSuccessMs))
                     statRow("最常失手的目标", viewModel.statistics.mostFailedTarget.map { "\($0.intValue) 分" } ?? "—")
                 }
+
+                Button(action: onRestart) {
+                    Text("再练一场")
+                        .font(.headline)
+                        .foregroundStyle(Palette.onPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Palette.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .accessibilityIdentifier("rushRestart")
             }
             .padding()
         }
@@ -64,7 +77,9 @@ struct CheckoutRushReportView: View {
      * 比去猜它的 Swift 名字稳妥。
      */
     private func secondsText(_ millis: KotlinLong?) -> String {
-        guard let number = millis as? NSNumber else { return "—" }
-        return String(format: "%.1fs", number.doubleValue / 1000)
+        // `SharedLong` 继承 `SharedNumber : NSNumber`，因此 `doubleValue` 直接可用；
+        // 写成 `as? NSNumber` 会被编译器判成冗余转换（有 warning）。
+        guard let millis else { return "—" }
+        return String(format: "%.1fs", millis.doubleValue / 1000)
     }
 }

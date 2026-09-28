@@ -28,6 +28,15 @@ final class ImpactPracticeViewModel {
     private(set) var hitCount = 0
     private(set) var outCount = 0
 
+    /**
+     * 与 `frames` **一一对应**的「这一镖是不是脱靶」。
+     *
+     * `ImpactFrame` 生成后不再携带该标记，所以撤销时没处问「撤回的是命中还是脱靶」——
+     * 早前靠 `frames.count` 反推，结果是撤了命中镖却减了 `outCount`，命中率越撤越离谱。
+     * 与其在帧里找，不如另存一列：撤销时 pop 出来即可，代价只有一个 Bool。
+     */
+    private var missFlags: [Bool] = []
+
     init(kind: IntentKind = .triple, sector: Int32 = 20, spanMm: Double = 60) {
         self.target = IntentTarget(kind: kind, sector: sector)
         self.spanMm = spanMm
@@ -74,17 +83,22 @@ final class ImpactPracticeViewModel {
             hitCount += 1
         }
         frames.append(ImpactFrames.shared.of(target: target, xMm: xMm, yMm: yMm))
+        missFlags.append(isMiss)
     }
 
     func undoLast() {
         guard !frames.isEmpty else { return }
         frames.removeLast()
-        // 这里无法再区分撤回的是脱靶还是命中样本：`ImpactFrame` 一旦生成就不再携带该标记。
-        if hitCount >= frames.count + 1 { hitCount -= 1 } else if outCount > 0 { outCount -= 1 }
+        if missFlags.removeLast() {
+            outCount = max(0, outCount - 1)
+        } else {
+            hitCount = max(0, hitCount - 1)
+        }
     }
 
     func reset() {
         frames = []
+        missFlags = []
         hitCount = 0
         outCount = 0
     }
