@@ -12,6 +12,11 @@ enum SharedAccess {
     static let x01Ai = X01Ai.shared
     static let countUpRules = CountUpRules.shared
 
+    /** `new/checkout/single/round/undo/insert/remove/set/increment/decrement` 家族方法与 ObjC 的 init 家族冲突，
+     *  导出时会被自动改名（加 `do` 前缀）：Kotlin 的 `newTarget` → Swift `doNewTarget`。 */
+    static let randomCheckoutRules = RandomCheckoutRules.shared
+    static let checkoutSolver = CheckoutSolver.shared
+
     /**
      * ⚠️ `kotlin.random.Random` 是**抽象类**，不能 `new`。
      *

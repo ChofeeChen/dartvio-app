@@ -90,6 +90,19 @@ enum SharedFactory {
 
 
 
+    /**
+     * 随机结镖的新目标：先让 `CheckoutSolver` 生成目标分与全部可行路线，
+     * 再交给状态机建初始帧。Kotlin 侧写作 `newTarget(target, routes)`，
+     * 导出后因 `new` 前缀冲突自动改名为 `doNewTarget`。
+     */
+    static func randomCheckoutTarget() -> RandomCheckoutState {
+        let target = SharedAccess.checkoutSolver.generateTarget()
+        return SharedAccess.randomCheckoutRules.doNewTarget(
+            target: target,
+            routes: SharedAccess.checkoutSolver.routesFor(target: target)
+        )
+    }
+
     // MARK: - AI
 
     /** Kotlin 侧 `ppr` 是 Double（导出为 `double`），这里别写成 Float。 */

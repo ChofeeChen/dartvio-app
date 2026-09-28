@@ -21,6 +21,8 @@
 		20000000000000000000001B /* KeypadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001B /* KeypadView.swift */; };
 		20000000000000000000001C /* GameCommon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001C /* GameCommon.swift */; };
 		20000000000000000000001D /* DartVioUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* DartVioUITests.swift */; };
+		20000000000000000000001E /* RandomCheckoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000021 /* RandomCheckoutViewModel.swift */; };
+		20000000000000000000001F /* RandomCheckoutPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000022 /* RandomCheckoutPracticeView.swift */; };
 		5FF90B41306A68AC00C80187 /* shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; };
 		5FF90B42306A68AC00C80187 /* shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -66,8 +68,10 @@
 		10000000000000000000001D /* link-shared.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "link-shared.sh"; sourceTree = "<group>"; };
 		10000000000000000000001E /* DartVio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DartVio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		10000000000000000000001F /* DartVioUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DartVioUITests.swift; sourceTree = "<group>"; };
+		100000000000000000000021 /* RandomCheckoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCheckoutViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000022 /* RandomCheckoutPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCheckoutPracticeView.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* DartVioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DartVioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5FF90B40306A68AC00C80187 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = build/Frameworks/shared.framework; sourceTree = "<group>"; };
+		5FF90B40306A68AC00C80187 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = Build/Frameworks/shared.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -171,6 +175,8 @@
 				100000000000000000000018 /* CountUpViewModel.swift */,
 				100000000000000000000019 /* CountUpPracticeView.swift */,
 				10000000000000000000001A /* CountUpResultView.swift */,
+				100000000000000000000021 /* RandomCheckoutViewModel.swift */,
+				100000000000000000000022 /* RandomCheckoutPracticeView.swift */,
 			);
 			path = Practice;
 			sourceTree = "<group>";
@@ -329,6 +335,8 @@
 				20000000000000000000001A /* CountUpResultView.swift in Sources */,
 				20000000000000000000001B /* KeypadView.swift in Sources */,
 				20000000000000000000001C /* GameCommon.swift in Sources */,
+				20000000000000000000001E /* RandomCheckoutViewModel.swift in Sources */,
+				20000000000000000000001F /* RandomCheckoutPracticeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,7 +379,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CODE_SIGN_FLAGS = "";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -392,7 +399,6 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CODE_SIGN_FLAGS = "";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
@@ -416,7 +422,6 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.18;
-				OTHER_CODE_SIGN_FLAGS = "--deep";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -438,7 +443,6 @@
 			buildSettings = {
 				ARCHS = arm64;
 				CODE_SIGNING_ALLOWED = yes;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = P5FGHR787N;
@@ -451,7 +455,6 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.18;
-				OTHER_CODE_SIGN_FLAGS = "--deep";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",

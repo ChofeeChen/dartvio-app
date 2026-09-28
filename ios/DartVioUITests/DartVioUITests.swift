@@ -166,6 +166,50 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(bestRow.waitForExistence(timeout: 5))
     }
 
+    // MARK: - 随机结镖练习（对齐 Android 练习中心）
+
+    /**
+     * **为什么用 MISS 而不是真实分数**：目标是引擎随机生成的（`CheckoutSolver.generateTarget`），
+     * 写死任何具体分数都会随机失败。MISS 计 0 分，三镖投满就是「三镖未结」，
+     * 这条路径与目标分无关，断言才稳定。
+     */
+    func testV5RandomCheckoutPractice() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "随机结镖")
+        ).firstMatch.tap()
+
+        XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["rc目标"].waitForExistence(timeout: 5))
+
+        let targetText = app.staticTexts["rc目标"].label
+        let target = Int(targetText) ?? 0
+        XCTAssertGreaterThan(target, 1, "目标分应是 >1 的可结镖分数，实得 \(targetText)")
+
+        // 三镖 MISS → 目标未完成 → 结果横幅「三镖未结」
+        for _ in 0..<3 { app.buttons["MISS"].tap() }
+        let result = app.staticTexts["rcResult"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5))
+        XCTAssertEqual(result.label, "三镖未结")
+
+        // 查看答案：标准答案由 shared 的 CheckoutSolver 给出，非空即可
+        app.buttons["查看答案"].tap()
+        let answer = app.staticTexts["rcAnswer"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 5))
+        XCTAssertFalse(answer.label.isEmpty)
+
+        // 跳过此题 → 换签，结果横幅消失
+        app.buttons["跳过此题"].tap()
+        let gone = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == 0"),
+            object: app.staticTexts["rcResult"]
+        )
+        wait(for: [gone], timeout: 5)
+    }
+
     // MARK: - 辅助
 
     /// 录一镖 20：数字 2、0 进 buffer，确认投出（KeypadView 的录入语义）。
