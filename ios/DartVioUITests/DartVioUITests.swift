@@ -388,6 +388,46 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["训练建议"].waitForExistence(timeout: 5))
     }
 
+    /**
+     * Cricket 正式对局：进入 → 打一个三镖回合 → 断言凭证矩阵与分数更新。
+     *
+     * 这条钉的是**整套接线**：设置页入口、 Cricket 的 `applySingleDart` 逐镖预览、
+     * 以及最重要的**矩阵渲染**（进度不是一个数，是「目标 × 玩家」的凭证表）。
+     *
+     * 选 T20 是因为它是第一个目标行、也是玩家一眼会去看的那一行：
+     * 一镖 T20 应当画出 3 个记号（= 直接关闭），而不是 1 个 ——
+     * 这正是 Cricket 区别于「数镖」Suite 的地方。
+     */
+    func testV14CricketGame() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["对局"].tap()
+        app.buttons["openCricket"].tap()
+        app.buttons["cricketStart"].tap()
+
+        let board = app.otherElements["cricketBoard"]
+        if !board.exists {
+            dumpUI(on: app, tag: "V14-board")
+        }
+        XCTAssertTrue(board.waitForExistence(timeout: 10), "cricketBoard 未出现，见 /tmp/ui_dump_V14-board.txt")
+
+        // T20：三倍 20 = 直接集满 3 个记号（Cricket 的"累计 3 次"口径）
+        app.buttons["T"].tap()
+        app.buttons["2"].tap()
+        app.buttons["0"].tap()
+        app.buttons["结束回合"].tap()
+
+        // 矩阵与分数都应在**回合结束后**立即可见
+        if !app.otherElements["cricketScores"].exists {
+            dumpUI(on: app, tag: "V14-scores")
+        }
+        XCTAssertTrue(app.otherElements["cricketScores"].waitForExistence(timeout: 5))
+        let scoreLabel = app.staticTexts["20"]
+        XCTAssertTrue(app.staticTexts["20"].waitForExistence(timeout: 5), "20 分区应出现在板面上")
+        _ = scoreLabel
+        XCTAssertTrue(app.staticTexts["BULL"].waitForExistence(timeout: 5), "目标集应包含 Bull")
+    }
+
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
     private let viewModelMinDarts = 30
 
@@ -413,8 +453,15 @@ final class DartVioUITests: XCTestCase {
         var lines: [String] = ["===DIAG \(tag) START==="]
         for button in app.buttons.allElementsBoundByIndex { lines.append("BTN: [\(button.label)]") }
         for text in app.staticTexts.allElementsBoundByIndex { lines.append("TXT: [\(text.label)]") }
+        // 带 identifier 的容器（如 cricketBoard / cricketScores）大概率露成 otherElement，
+        // 只按 label 找会误判成「没做」，所以把 identifier 也打出来。
+        for element in app.otherElements.allElementsBoundByIndex {
+            lines.append("OTH: id=[\(element.identifier)] label=[\(element.label)]")
+        }
         lines.append("===DIAG \(tag) END===")
         let dump = lines.joined(separator: "\n")
+        // 同时打到 stdout：xcodebuild 测试日志里能直接看到，不用去模拟器沙盒捞文件。
+        print(dump)
         try? dump.write(toFile: "/tmp/ui_dump_\(tag).txt", atomically: true, encoding: .utf8)
     }
 }

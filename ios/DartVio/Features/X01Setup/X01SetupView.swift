@@ -85,6 +85,30 @@ struct X01SetupView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
+                NavigationLink {
+                    CricketSetupView()
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Cricket 正式对局")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Palette.textPrimary)
+                            Text("关闭 15-20 与 Bull，还有 3 种玩法变体")
+                                .font(.caption)
+                                .foregroundStyle(Palette.textMuted)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(Palette.textMuted)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(Palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .accessibilityIdentifier("openCricket")
+
                 SetupRow(title: "目标分") {
                     Picker("", selection: $targetScore) {
                         Text("301").tag(Int32(301))

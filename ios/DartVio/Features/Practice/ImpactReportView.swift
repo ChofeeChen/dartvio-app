@@ -26,6 +26,7 @@ struct ImpactReportView: View {
             VStack(spacing: 14) {
                 headlineCard
                 boardHeatmapCard
+                fingerprintCard
                 errorHeatmapCard
                 if let stats = viewModel.stats { scatterShapeCard(stats) }
                 metricsCard
@@ -78,6 +79,9 @@ struct ImpactReportView: View {
                         highlightSector: viewModel.target.kind == IntentKind.bull ? nil : Int(viewModel.target.sector)
                     )
                     HeatmapCanvas(grid: heat.grid, centerMm: .zero, pxPerMm: pxPerMm)
+                    impactDots(pxPerMm: pxPerMm)
+                    targetRing(pxPerMm: pxPerMm)
+                    centroidMark(pxPerMm: pxPerMm)
                     aimMarker(pxPerMm: pxPerMm)
                 }
                 .frame(width: side, height: side)
@@ -104,6 +108,175 @@ struct ImpactReportView: View {
                 // mm 的 +y 向上、画布 +y 向下 ⇒ 纵向取反。
                 y: -CGFloat(anchor.y) * pxPerMm
             )
+    }
+
+    // MARK: - 全靶热点图的叠加层（md 方案 §2.3：落点 + 目标区高亮 + 质心）
+
+    /** 落点层：命中绿 / 脱靶红，白描边（md §2.3 叠加层 1 的配色规范）。 */
+    private func impactDots(pxPerMm: CGFloat) -> some View {
+        ForEach(viewModel.points.indices, id: \.self) { index in
+            let point = viewModel.points[index]
+            Circle()
+                .fill(point.isMiss ? Color(red: 0.91, green: 0.30, blue: 0.24)
+                                   : Color(red: 0.18, green: 0.80, blue: 0.44))
+                .frame(width: 7, height: 7)
+                .overlay(Circle().strokeBorder(.white, lineWidth: 1))
+                .offset(
+                    x: CGFloat(point.xMm) * pxPerMm,
+                    y: -CGFloat(point.yMm) * pxPerMm
+                )
+        }
+    }
+
+    /**
+     * 目标区高亮：橙色虚线圈（md §2.3 叠加层 4）。
+     *
+     * 圈半径取**所在环带的半宽**（环中线到边正好是它），所以 T20 的圈就贴着三倍环的宽窄，
+     * 一眼能看出「圈外 = 打到隔壁」。
+     */
+    private func targetRing(pxPerMm: CGFloat) -> some View {
+        let anchor = viewModel.target.anchorMm()
+        let kind = viewModel.target.kind
+        let halfWidth: Double
+        if kind == IntentKind.bull {
+            halfWidth = BoardMetrics.innerBull
+        } else if kind == IntentKind.double_ {
+            halfWidth = (BoardMetrics.boardRadius - BoardMetrics.doubleInner) / 2
+        } else if kind == IntentKind.singleOuter {
+            halfWidth = (BoardMetrics.doubleInner - BoardMetrics.tripleOuter) / 2
+        } else {
+            halfWidth = (BoardMetrics.tripleOuter - BoardMetrics.tripleInner) / 2
+        }
+        let radius = max(6, halfWidth)
+        return Circle()
+            .stroke(Color(red: 1.0, green: 0.42, blue: 0.21),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            .frame(width: CGFloat(radius * 2) * pxPerMm, height: CGFloat(radius * 2) * pxPerMm)
+            .offset(x: CGFloat(anchor.x) * pxPerMm, y: -CGFloat(anchor.y) * pxPerMm)
+    }
+
+    /** 质心十字（md §2.3 叠加层 3）：命中样本的平均位置，白色大号。 */
+    @ViewBuilder
+    private func centroidMark(pxPerMm: CGFloat) -> some View {
+        let hits = viewModel.points.filter { !$0.isMiss }
+        if !hits.isEmpty {
+            let x = hits.map(\.xMm).reduce(0, +) / Double(hits.count)
+            let y = hits.map(\.yMm).reduce(0, +) / Double(hits.count)
+            let center = CGPoint(x: CGFloat(x) * pxPerMm, y: -CGFloat(y) * pxPerMm)
+            ZStack {
+                Circle()
+                    .strokeBorder(.white, lineWidth: 2)
+                    .frame(width: 16, height: 16)
+                Path { path in
+                    path.move(to: CGPoint(x: center.x - 11, y: center.y))
+                    path.addLine(to: CGPoint(x: center.x + 11, y: center.y))
+                    path.move(to: CGPoint(x: center.x, y: center.y - 11))
+                    path.addLine(to: CGPoint(x: center.x, y: center.y + 11))
+                }
+                .stroke(.white, lineWidth: 1.5)
+            }
+            .offset(x: center.x, y: center.y)
+        }
+    }
+
+    // MARK: - 失误指纹（md 方案 核心图②：一张条形图讲清「偏哪」）
+
+    /** 四向计数：每镖归入占比最大的一向，四向之和 = 总镖数 ⇒ 百分比直接可加可比。 */
+    private var fingerprint: (left: Int, right: Int, far: Int, near: Int, total: Int)? {
+        let samples = viewModel.points
+        guard !samples.isEmpty else { return nil }
+        let anchor = viewModel.target.anchorMm()
+        let length = hypot(anchor.x, anchor.y)
+        // BULL 的锚点在靶心，「径向」没有定义方向 ⇒ 退化为以 +y（打上方）为远端。
+        let ux = length > 0.5 ? anchor.x / length : 0.0
+        let uy = length > 0.5 ? anchor.y / length : 1.0
+        var left = 0, right = 0, far = 0, near = 0
+        for point in samples {
+            let dx = point.xMm - anchor.x
+            let dy = point.yMm - anchor.y
+            let radial = dx * ux + dy * uy
+            // 哪个分量大归哪向：横向位移大 = 左右偏，径向位移大 = 远近偏。
+            if abs(dx) >= abs(radial) {
+                if dx < 0 { left += 1 } else { right += 1 }
+            } else {
+                if radial > 0 { far += 1 } else { near += 1 }
+            }
+        }
+        return (left, right, far, near, samples.count)
+    }
+
+    private var fingerprintCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            cardTitle("失误指纹", subtitle: "相对瞄点的四向占比 · 偏左/偏右 = 角度，偏远/偏近 = 力度")
+            if let tally = fingerprint, tally.total > 0 {
+                let percent = { (count: Int) in Int((Double(count) / Double(tally.total) * 100).rounded()) }
+                fingerprintBar("偏左", count: tally.left, percent: percent(tally.left),
+                               color: Color(red: 0.20, green: 0.60, blue: 0.86))
+                fingerprintBar("偏右", count: tally.right, percent: percent(tally.right),
+                               color: Color(red: 0.16, green: 0.50, blue: 0.72))
+                fingerprintBar("偏远", count: tally.far, percent: percent(tally.far),
+                               color: Color(red: 0.90, green: 0.49, blue: 0.13))
+                fingerprintBar("偏近", count: tally.near, percent: percent(tally.near),
+                               color: Color(red: 0.83, green: 0.33, blue: 0.00))
+                Text(fingerprintSentence(tally))
+                    .font(.caption)
+                    .foregroundStyle(Palette.textSecondary)
+            } else {
+                Text("还没有样本，回到练习页投几镖。")
+                    .font(.caption)
+                    .foregroundStyle(Palette.textMuted)
+            }
+        }
+        .padding()
+        .background(Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier("impactFingerprint")
+    }
+
+    private func fingerprintBar(_ label: String, count: Int, percent: Int, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(Palette.textSecondary)
+                .frame(width: 32, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Palette.surfaceVariant)
+                    Capsule()
+                        .fill(color)
+                        .frame(width: max(2, geo.size.width * CGFloat(percent) / 100))
+                }
+            }
+            .frame(height: 10)
+            Text("\(percent)%")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(Palette.textPrimary)
+                .frame(width: 36, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) \(percent)%（\(count) 镖）")
+    }
+
+    /**
+     * 指纹结论（md §2.4 的规则）：先看主因，再看次因；四向都不占优时直说「稳定性问题」。
+     *
+     * 阈值来自 md 方案：35% 定主因、25% 定次因、30% 是「没有单一方向问题」的分界。
+     */
+    private func fingerprintSentence(_ print: (left: Int, right: Int, far: Int, near: Int, total: Int)) -> String {
+        let percent = { (count: Int) in Double(count) / Double(print.total) * 100 }
+        let left = percent(print.left), right = percent(print.right)
+        let far = percent(print.far), near = percent(print.near)
+        let directions: [(String, Double)] = [("偏左", left), ("偏右", right), ("偏远", far), ("偏近", near)]
+        if left > 35 && far > 25 { return "主要问题是偏左，其次打远 —— 先修瞄线，再压低出手。" }
+        if left > 35 { return "主要问题是偏左，出手前检查站位与瞄线。" }
+        if right > 35 { return "主要问题是偏右，出手前检查站位与瞄线。" }
+        if directions.allSatisfy({ $0.1 < 30 }) {
+            return "四向都不占优：不是方向问题，是稳定性问题 —— 练固定节奏的 grouping。"
+        }
+        if let main = directions.max(by: { $0.1 < $1.1 }) {
+            return "落点整体偏\(main.0)（\(Int(main.1.rounded()))%），练的时候盯住这一向。"
+        }
+        return "样本还看不出明显方向。"
     }
 
     // MARK: - 误差热点图

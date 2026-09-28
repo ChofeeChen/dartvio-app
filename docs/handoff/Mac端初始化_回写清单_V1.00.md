@@ -1683,3 +1683,43 @@ Executed 13 tests, with 0 failures
 编译 0 error / 0 warning。
 
 _（第 8 轮：Cricket 正式对局的结果将追加于此）_
+
+## 17. 第 8 轮：精准工坊靶盘定位修复 + 报告图表增强 + Cricket 正式对局打通
+
+### 17.1 修复清单
+
+| # | 症状 | 根因 | 修法 |
+| --- | --- | --- | --- |
+| 1 | 精准工坊选 T19 / D20，矩形框里**永远显示牛眼居中** | `BoardPainter.paint` 把靶心画在**画布中心**，`centerMm` 只参与落点与准星的投影，靶盘本体完全无视视窗中心 | 靶心改由 `projection.point(xMm: 0, yMm: 0)` 投影得出；切分区只改 `centerMm`、不改 `pxPerMm`（放大倍率恒定） |
+| 2 | 一进 Cricket 对局页 **App 直接崩溃**（V14：`Application is not running`） | `CricketGameViewModel` 里 `KotlinRandom()`：`kotlin.random.Random` 是**抽象类**，ObjC 头文件里有 `init` 符号所以编译能过，一运行就 `AbstractClassConstructorCalled` | 改用桥接助手 `SharedAccess.newRandom()`（= `KotlinRandom.Default.shared`）。⚠️ 根因是 **Kotlin 默认参数 `random: Random = Random.Default` 不导出到 ObjC**，Swift 端只能自己补，于是踩到抽象类 |
+| 3 | 点「开始对局」**原地不动** | `NavigationLink(value:)` + 在被 push 的页里注册 `navigationDestination(for:)` 不生效 | 改成与 `openCricket` 一致的**视图型** `NavigationLink`，并移除随之失效的 destination 注册 |
+| 4 | XCUITest 查不到 `cricketScores`（页面肉眼可见） | 纯 `HStack` 不被 SwiftUI 暴露成无障碍节点，`accessibilityIdentifier` 被丢弃（有 background 的容器如 `cricketBoard` 才挂得住） | 加 `.accessibilityElement(children: .contain)` 后 identifier 生效，子文本仍可单独查询 |
+
+### 17.2 报告页增强（对齐 `darts_final_scheme.md`）
+
+- **全靶热点图**补齐 md §2.3 的三层叠加：落点（命中绿 / 脱靶红 + 白描边）、目标区橙色虚线圈（半径 = 所在环带半宽）、质心白色十字准星；
+- **新增失误指纹图**（md 核心图②）：每镖按位移分量的**主方向**归入偏左 / 偏右 / 偏远 / 偏近四向（四向之和 = 总镖数 ⇒ 百分比可加可比），横向条形图 + 一句结论（35% 定主因、25% 定次因、四向皆 <30% 判稳定性问题）；
+- 横向位移 = 角度偏差，径向投影 = 力度偏差；BULL 的锚点在靶心无径向，退化为以 +y 为远端。
+
+### 17.3 新增测试与回归
+
+| 测试 | 钉住什么 |
+| --- | --- |
+| `testV14CricketGame` | 设置页入口 → 对局页矩阵（15–20 / BULL）→ T20 投镖 → `cricketScores` 可见；顺带钉住上述 3 个崩溃 / 导航 / 无障碍坑 |
+
+诊断助手 `dumpUI` 加了 `otherElements` 的 identifier 输出（之前只打 label，带 identifier 的容器看起来全是空白）。
+
+```
+V2 导航 / V3 结镖 / V3 回合流转 / V4 Count Up            passed
+V5 随机结镖 / V6 极速挑战 / V7 99 Darts                  passed
+V8 Cricket MPR / V9 精准工坊 / V10 双人对抗               passed
+V11 对抗键盘约束（Bull） / V12 对抗键盘约束（环游）          passed
+V13 精准工坊改造 / V14 Cricket 正式对局                    passed
+Executed 14 tests, with 0 failures
+```
+
+编译 0 error / 0 warning。
+
+### 17.4 Cricket 剩余缺口（下一步）
+
+主链路（设置 → 对局 → AI → 多局胜负）已打通。剩余：变体不全（缺 Tactics / 随机目标）、Tactics 的 **claim 重判**（`CricketRules.redeclare` 引擎已有、iOS 未接）、对局不落库、无成就 / 统计 / 战报、设置不持久化。

@@ -81,7 +81,10 @@ enum BoardPainter {
         projection: BoardProjection,
         highlightSector: Int? = nil
     ) {
-        let center = CGPoint(x: projection.size.width / 2, y: projection.size.height / 2)
+        // ⚠️ 靶心**不是**画布中心：视窗中心由 `centerMm` 决定（练习页 = 目标锚点），
+        // 所以靶心必须经投影换算。之前直接取画布中心，等于无视 centerMm ——
+        // 不管练 T19 还是 D20，框中央永远是牛眼（就是那个「固定显示牛眼区域」的显示错误）。
+        let center = projection.point(xMm: 0, yMm: 0)
         let angleStep = BoardMetrics.sectorAngleDeg
 
         for (index, sector) in BoardMetrics.sectorOrder.enumerated() {

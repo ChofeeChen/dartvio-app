@@ -36,6 +36,16 @@ enum SharedFactory {
         )
     }
 
+    /**
+     * 一镖 + 它的声明口径。
+     *
+     * 单独包一层是为了让调用点不用记 `ClaimedDart(dart:claim:)` 的参数顺序 ——
+     * 「镖」和「这份镖按什么口径算」是两件事，写反了不会报错，只会静默地按错口径结算。
+     */
+    static func claimed(dart: Dart, claim: DartClaim) -> ClaimedDart {
+        ClaimedDart(dart: dart, claim: claim)
+    }
+
     static func player(
         id: String,
         name: String,
