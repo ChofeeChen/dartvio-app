@@ -8,12 +8,12 @@
 DartVio：面向飞镖爱好者的**移动端** App，本地 2 人比赛 / 在线对战 / AI 对手 / 练习模式 / 统计分析。
 对标 Dartsmind 与「好镖」，差异化在自动计分（硬件 M8 / 手机视觉 M12）与在线对战。
 
-## 2. 当前状态（2026-09-27）
+## 2. 当前状态（2026-09-28）
 
 | 项 | 值 |
 | --- | --- |
 | Android App | `versionCode = 18`、`versionName = 0.1.18`（唯一出处：`android/app/build.gradle.kts` 顶部两个 val） |
-| 平台 | Android 已发 Beta；**iOS 待启动** |
+| 平台 | Android 已发 Beta；**iOS 编译已打通**（2026-09-28 两个 iOS 目标 BUILD SUCCESSFUL），**iOS 工程待建**（M1 framework 输出已批准，Bundle ID `com.dartvio.app`） |
 | 技术栈 | Kotlin 2.2.10 + Jetpack Compose（BOM 2026.02.01）+ Room 2.7.2；Gradle 9.5 / AGP 9.3；minSdk 24 / targetSdk 37 |
 | 自动化门禁 | `testDebugUnitTest` 65 文件 / 653 例 / 0 fail；`assembleBeta` 通过 |
 | 后端 | 联机 = **自建后端**（蜂窝可达，VM `/opt/dartvio`）；匿名统计 = Supabase（本机 TLS 被重置，E2E 需真机/换网络） |
@@ -62,3 +62,15 @@ DartVio：面向飞镖爱好者的**移动端** App，本地 2 人比赛 / 在�
 **不共享**：对话历史、打开的文件、终端输出。
 
 因此协同规则是：**结论落到文件里，不靠窗口之间传话**。实现完成后写「回写清单」文件，需求变更直接改 PRD 文件，另一个窗口下次启动自然会读到。
+
+### 6.1 跨机交接的既定流程（2026-09-28 约定）
+
+约定：**MCB = Mac 端 CodeBuddy，WCB = Windows 端 CodeBuddy**。
+
+- **WCB 每完成一次任务，顺带产出下一轮给 MCB 的提示词**，放进 `docs/handoff/`，命名 `Mac端提示词_第N轮{主题}_V1.00.md`；
+  正文用 `--- 提示词正文开始 ---` / `--- 提示词正文结束 ---` 包裹，便于整段复制（跨机上下文不共享）。
+- **MCB 做完一轮后回写到** `docs/handoff/Mac端初始化_回写清单_V1.00.md` **末尾** —— 该文件末尾始终预留一行追加位，
+  **谁都不改对方已写的段落**（避免抢文件）。
+- 归口：提示词与 PRD（`docs/prd/`）**由 WCB 串行维护**；回写清单正文归 MCB；共用构建文件
+  （`shared/build.gradle.kts`、`settings.gradle.kts`、`.gitignore`）改动前先同步对方。
+- 轮次索引：`Mac端初始化_提示词_V1.01.md`（第 1 轮）→ `Mac端提示词_第2轮iOS编译验收_V1.00.md` → `Mac端提示词_第3轮framework与Xcode工程_V1.00.md`。
