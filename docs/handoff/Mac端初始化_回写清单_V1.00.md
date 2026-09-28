@@ -809,4 +809,102 @@ fun formatMpr(mpr: Float): String {
 
 ---
 
-_（Mac 端补跑 iOS 编译的结果请追加于此）_
+## 7. Mac 端回写（2026-09-28）：iOS 编译验收 **通过**
+
+### 7.1 结论
+
+```
+git pull → HEAD = aba70ee（两端对齐）
+./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64
+
+> Task :shared:compileKotlinIosSimulatorArm64
+> Task :shared:compileKotlinIosArm64
+BUILD SUCCESSFUL
+2 actionable tasks: 2 executed
+e: 0 条     w: 4 行（同一 2 条警告 × 2 个目标，见 §7.4）
+```
+
+**✅ iOS 编译打通。** WCB 的 `872eb04`（9 文件，非 10 —— `BoardGeometry.kt:76` 是 74 行的连锁报错，已如预判自动消失）在 Mac 端验证有效。
+`iosMain` 的 `PlatformTime.ios.kt`（`baf9895`，CoreFoundation 方案）同样编译通过，W13 按「接受」处理，未再改动。
+
+### 7.2 关于耗时：我为什么测了四次
+
+第一次跑出来 **6 秒**，这个数字我不敢直接写进回写清单 —— Kotlin/Native 编译近 1 万行不可能这么快。于是做了交叉验证：
+
+| # | 方法 | 结果 | 判定 |
+| --- | --- | --- | --- |
+| 1 | 直接跑 | 6s | Gradle build cache 命中 |
+| 2 | `--rerun-tasks` | 2s | 同上，仍命中 build cache |
+| 3 | `--rerun-tasks --no-build-cache` | 1s | Kotlin 增量缓存命中 |
+| 4 | `./gradlew --stop` + 手动删产物 + `--no-build-cache` | **7s** | ✅ **可信的冷启动耗时** |
+
+第 4 次才真正绕过了三层缓存（Gradle build cache / Kotlin 增量缓存 / Kotlin daemon 内存缓存）。
+所以**冷启动全量编译 = 7 秒**（两个目标合计），日常增量会更短。
+
+> 顺带说明为什么这么快：这两个任务只产出 **klib**（前端 + IR 序列化），**不做 native codegen**。
+> 真正的耗时在后面 `linkDebugFrameworkIos*`（链接成 framework），预计分钟级，届时另行记录。
+
+### 7.3 环境版本快照（本次）
+
+```
+Xcode            27.0 (Build 27A266a)
+Kotlin           2.2.10
+Gradle           9.5.0
+AGP              9.3.0
+JDK              OpenJDK 25.0.3 (Android Studio JBR)
+macOS            27.0 (Build 26A428) / Apple Silicon arm64
+机型             Mac17,3（arm64，故不需要 iosX64()）
+gradlew 位置     android/gradlew（不在仓库根）
+remote           git@github.com:ChofeeChen/dartvio-app.git（22 端口通，本轮未触发 443 阻断）
+```
+
+### 7.4 产物校验（不只看 BUILD SUCCESSFUL）
+
+```
+android/shared/build/classes/kotlin/
+├── iosSimulatorArm64/main/klib/shared/default/{manifest, ir/*.knf|knb|knd|knt}
+└── iosArm64/main/klib/shared/default/{manifest, ir/*}
+```
+
+两个目标的 `manifest` 与全套 IR 文件均为**本次编译新生成**（已按时间戳核对，非历史残留）。
+
+### 7.5 剩余警告（4 行，无害）
+
+```
+w: .../commonMain/.../platform/PlatformTime.kt:25:1
+w: .../iosMain/.../platform/PlatformTime.ios.kt:27:1
+   'expect'/'actual' classes ... are in Beta. Consider using the '-Xexpect-actual-classes' flag
+```
+
+同一个文件对，在两个目标各报一次 → 共 4 行。**不影响编译结果**。
+若要消除，需在 `shared/build.gradle.kts` 加 `compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")` ——
+属两端共用文件，**本次没动**（见 M2）。
+
+### 7.6 两份 iOS 文档已入库
+
+`docs/handoff/iOS首版页面对照表_V1.00.md`、`docs/handoff/iOS端MVP施工蓝图_V1.00.md`
+此前是 Mac 端未跟踪文件，本次已提交推送（详见提交记录）。
+
+### 7.7 我建议的下一步
+
+| 序 | 事项 | 归属 | 阻塞关系 |
+| --- | --- | --- | --- |
+| ① | **`shared/build.gradle.kts` 加 `binaries.framework { baseName = "shared"; isStatic = true }`** | **需 WCB 先回确认**（两端共用文件） | 阻塞我建 iOS 工程 |
+| ② | 建 `ios/` Xcode 工程 + embed framework 脚本（`ENABLE_USER_SCRIPT_SANDBOXING = NO`）+ Phase 0-4 | Mac 端（我） | 待① |
+| ③ | W11：提示词 §4 对 `NSDate()` / `NSUUID()` 的预判与实测不符，升 V1.01 | WCB | 不阻塞 |
+| ④ | D5：`domain/{stats,achievement,leaderboard}` 从 Room 反向依赖中解耦并下沉 | WCB 自行排期 | **不阻塞 iOS**（首版统计页先占位） |
+
+**①是目前唯一的硬阻塞**，其余都能并行。我在等 WCB 回①的期间不做任何仓库改动。
+
+### 7.8 新增待确认事项（Mac 端）
+
+| # | 事项 | 我的倾向 |
+| --- | --- | --- |
+| M1 | `shared/build.gradle.kts` 的 framework 输出配置：**谁来改、改完谁验**。建议我改（iOS 相关），改完跑 `linkDebugFrameworkIosSimulatorArm64` 验证，WCB 只需回一句确认 | 我改、我验 |
+| M2 | §7.5 的 `-Xexpect-actual-classes` 要不要加 | 倾向**不加**：只是 Beta 提示，加了会改共用构建文件；真要消除可以等②一起做 |
+| M3 | iOS Bundle ID 定为 **`com.dartvio.app`**（与 Android `applicationId` 一致），App 名 **DartVio**，图标素材已收（1024 PNG） | 仅告知，已定 |
+| M4 | `ios/` 目录不参与 Gradle 构建（不在 `settings.gradle.kts` 里），不会影响 Android 侧 | 仅告知 |
+
+---
+
+_（第 3 轮：iOS framework 输出 + Xcode 工程的结果将追加于此）_
