@@ -47,9 +47,25 @@ kotlin {
         // 单测留在 :app（650 例原样跑，见 app/src/test），本模块不另开测试源集。
     }
 
-    // 真机（iPhone）与 Apple Silicon 模拟器。Intel Mac 若需模拟器再补 iosX64()。
-    iosArm64()
-    iosSimulatorArm64()
+    /*
+     * 真机（iPhone）与 Apple Silicon 模拟器。Intel Mac 若需模拟器再补 iosX64()。
+     *
+     * 两个目标都产出 **静态 framework**（baseName = "shared"）供 Xcode 链接。
+     * - 静态（isStatic = true）：Xcode 侧只需链接，不必 embed & sign，
+     *   于是绕开 Xcode 15+ 的 User Script Sandboxing 对 embed 脚本的拦截，也不必配签名。
+     * - 两个目标写进同一个 listOf() 而不是先声明再 listOf() 取一遍：
+     *   iosArm64() / iosSimulatorArm64() 是「创建 + 注册」，重复调用会报目标重名，
+     *   因此这里创建一次、顺手完成配置。
+     */
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { target ->
+        target.binaries.framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
