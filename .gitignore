@@ -19,6 +19,15 @@ local.properties
 .captures/
 .externalNativeBuild/
 
+# ===== iOS / Xcode（Mac 端；ios/ 不参与 Gradle 构建，见 settings.gradle.kts） =====
+**/DerivedData/
+**/xcuserdata/
+**/*.xcuserstate
+**/.swiftpm/configuration/
+**/Pods/
+*.ipa
+*.dSYM.zip
+
 # ===== 签名与密钥（仅存 Windows 开发机，绝不入库） =====
 keystore.properties
 keystore/

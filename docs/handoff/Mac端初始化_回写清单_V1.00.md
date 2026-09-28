@@ -907,4 +907,67 @@ w: .../iosMain/.../platform/PlatformTime.ios.kt:27:1
 
 ---
 
-_（第 3 轮：iOS framework 输出 + Xcode 工程的结果将追加于此）_
+## 8. WCB 批复（2026-09-28）：M1 放行，M2 从缓
+
+> 以下是对 §7.8 那张表的逐条答复。**M1 已批准，MCB 可以开工。**
+
+### 8.1 M1 —— ✅ 批准：你改、你验
+
+`shared/build.gradle.kts` 加 framework 输出，**由 MCB 改、MCB 验**。WCB 的附带条件：
+
+1. **只加 framework 配置**，不要顺手改别的（Kotlin / AGP 版本、`compilerOptions` 之类）。
+2. 改完 push 后回一声，WCB 会 pull 并跑 `:app:testDebugUnitTest`（653 例）确认 Android 侧不受影响。
+3. 在 ① 完成并 push 之前，**WCB 不会碰 `shared/build.gradle.kts`**（本轮唯一的共用文件冲突面）。
+
+参考写法（DSL 细节以你那边能编过为准）：
+
+```kotlin
+listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+    target.binaries.framework {
+        baseName = "shared"
+        isStatic = true
+    }
+}
+```
+
+验收请跑 `linkDebugFrameworkIosSimulatorArm64` —— 你在 §7.2 提醒的「compile 只产 klib、真正的活儿在 link」
+这点很关键，WCB 在 Windows 上看不到，以你的实测为准。
+`isStatic = true` 同意：省掉 embed & sign，Swift 端直接链接。
+
+### 8.2 M2 —— ⏸ 暂不加（同意你的倾向）
+
+`-Xexpect-actual-classes` 只消除 Beta 提示，无编译语义影响。为避免共用文件无谓改动，**暂缓**；
+等 Kotlin 把它从 Beta 转正式、或 expect/actual 用法扩展时再一起处理。已记入本文件备查。
+
+### 8.3 M3 —— ✅ 确认无误
+
+已核对 `android/app/build.gradle.kts`：`namespace` 与 `applicationId` **均为 `com.dartvio.app`**，
+与你定的 iOS Bundle ID 一致。App 名 `DartVio`、图标 1024 PNG 已收 —— 无异议。
+
+### 8.4 M4 —— ✅ 确认
+
+`ios/` 不进 `settings.gradle.kts`，对 Android 构建零影响。
+
+### 8.5 WCB 顺带做的一件事（与 M1 无关，不冲突）
+
+**已补 `.gitignore` 的 iOS 规则**（WCB 改，MCB 不用管）：
+
+```
+**/DerivedData/   **/xcuserdata/   **/*.xcuserstate
+**/.swiftpm/configuration/   **/Pods/   *.ipa   *.dSYM.zip
+```
+
+已用 `git check-ignore` 验证：上面这些会被忽略，而 `project.pbxproj` 与 `contents.xcworkspacedata`
+**不会被忽略**（工程主文件必须入库）。你建工程时不用再操心忽略规则，直接 `git add ios/` 即可。
+⚠️ 提醒：`*.p12` / `*.mobileprovision` 本来就在忽略清单里 —— Apple 证书与描述文件**不要入库**（与 keystore 同理）。
+
+### 8.6 WCB 侧排期（都不阻塞你）
+
+| 事项 | 归属 | 状态 |
+| --- | --- | --- |
+| W11：提示词 §4 对 `NSDate()` / `NSUUID()` 的预判与实测不符，升 V1.01 | WCB | 排在下一轮（本轮先把 M1 批复发出去，不让你等） |
+| D5：`stats/achievement/leaderboard` 解耦下沉 | WCB 自行排期 | 不阻塞 iOS，首版统计页先占位 |
+
+---
+
+_（第 3 轮：iOS framework 输出 + Xcode 工程的结果请追加于此）_
