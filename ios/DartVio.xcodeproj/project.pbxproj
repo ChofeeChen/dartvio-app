@@ -23,6 +23,18 @@
 		20000000000000000000001D /* DartVioUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* DartVioUITests.swift */; };
 		20000000000000000000001E /* RandomCheckoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000021 /* RandomCheckoutViewModel.swift */; };
 		20000000000000000000001F /* RandomCheckoutPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000022 /* RandomCheckoutPracticeView.swift */; };
+		200000000000000000000020 /* CheckoutRushViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000023 /* CheckoutRushViewModel.swift */; };
+		200000000000000000000021 /* CheckoutRushPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000024 /* CheckoutRushPracticeView.swift */; };
+		200000000000000000000022 /* CheckoutRushReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000025 /* CheckoutRushReportView.swift */; };
+		200000000000000000000023 /* NinetyNineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000026 /* NinetyNineViewModel.swift */; };
+		200000000000000000000024 /* NinetyNinePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000027 /* NinetyNinePracticeView.swift */; };
+		200000000000000000000025 /* CricketMprViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000028 /* CricketMprViewModel.swift */; };
+		200000000000000000000026 /* CricketMprPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000029 /* CricketMprPracticeView.swift */; };
+		200000000000000000000027 /* ImpactPracticeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000002A /* ImpactPracticeViewModel.swift */; };
+		200000000000000000000028 /* ImpactPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000002B /* ImpactPracticeView.swift */; };
+		200000000000000000000029 /* ImpactReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000002C /* ImpactReportView.swift */; };
+		20000000000000000000002A /* VersusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000002D /* VersusViewModel.swift */; };
+		20000000000000000000002B /* VersusFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000002E /* VersusFlowView.swift */; };
 		5FF90B41306A68AC00C80187 /* shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; };
 		5FF90B42306A68AC00C80187 /* shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -70,6 +82,18 @@
 		10000000000000000000001F /* DartVioUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DartVioUITests.swift; sourceTree = "<group>"; };
 		100000000000000000000021 /* RandomCheckoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCheckoutViewModel.swift; sourceTree = "<group>"; };
 		100000000000000000000022 /* RandomCheckoutPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCheckoutPracticeView.swift; sourceTree = "<group>"; };
+		100000000000000000000023 /* CheckoutRushViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutRushViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000024 /* CheckoutRushPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutRushPracticeView.swift; sourceTree = "<group>"; };
+		100000000000000000000025 /* CheckoutRushReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutRushReportView.swift; sourceTree = "<group>"; };
+		100000000000000000000026 /* NinetyNineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NinetyNineViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000027 /* NinetyNinePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NinetyNinePracticeView.swift; sourceTree = "<group>"; };
+		100000000000000000000028 /* CricketMprViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketMprViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000029 /* CricketMprPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketMprPracticeView.swift; sourceTree = "<group>"; };
+		10000000000000000000002A /* ImpactPracticeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactPracticeViewModel.swift; sourceTree = "<group>"; };
+		10000000000000000000002B /* ImpactPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactPracticeView.swift; sourceTree = "<group>"; };
+		10000000000000000000002C /* ImpactReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactReportView.swift; sourceTree = "<group>"; };
+		10000000000000000000002D /* VersusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersusViewModel.swift; sourceTree = "<group>"; };
+		10000000000000000000002E /* VersusFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersusFlowView.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* DartVioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DartVioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5FF90B40306A68AC00C80187 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = Build/Frameworks/shared.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -93,6 +117,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		30000000000000000000000E /* Versus */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000002D /* VersusViewModel.swift */,
+				10000000000000000000002E /* VersusFlowView.swift */,
+			);
+			path = Versus;
+			sourceTree = "<group>";
+		};
 		300000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
@@ -140,6 +173,7 @@
 				300000000000000000000007 /* X01Setup */,
 				300000000000000000000008 /* Game */,
 				300000000000000000000009 /* Practice */,
+				30000000000000000000000E /* Versus */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -177,6 +211,16 @@
 				10000000000000000000001A /* CountUpResultView.swift */,
 				100000000000000000000021 /* RandomCheckoutViewModel.swift */,
 				100000000000000000000022 /* RandomCheckoutPracticeView.swift */,
+				100000000000000000000023 /* CheckoutRushViewModel.swift */,
+				100000000000000000000024 /* CheckoutRushPracticeView.swift */,
+				100000000000000000000025 /* CheckoutRushReportView.swift */,
+				100000000000000000000026 /* NinetyNineViewModel.swift */,
+				100000000000000000000027 /* NinetyNinePracticeView.swift */,
+				100000000000000000000028 /* CricketMprViewModel.swift */,
+				100000000000000000000029 /* CricketMprPracticeView.swift */,
+				10000000000000000000002A /* ImpactPracticeViewModel.swift */,
+				10000000000000000000002B /* ImpactPracticeView.swift */,
+				10000000000000000000002C /* ImpactReportView.swift */,
 			);
 			path = Practice;
 			sourceTree = "<group>";
@@ -337,6 +381,18 @@
 				20000000000000000000001C /* GameCommon.swift in Sources */,
 				20000000000000000000001E /* RandomCheckoutViewModel.swift in Sources */,
 				20000000000000000000001F /* RandomCheckoutPracticeView.swift in Sources */,
+				200000000000000000000020 /* CheckoutRushViewModel.swift in Sources */,
+				200000000000000000000021 /* CheckoutRushPracticeView.swift in Sources */,
+				200000000000000000000022 /* CheckoutRushReportView.swift in Sources */,
+				200000000000000000000023 /* NinetyNineViewModel.swift in Sources */,
+				200000000000000000000024 /* NinetyNinePracticeView.swift in Sources */,
+				200000000000000000000025 /* CricketMprViewModel.swift in Sources */,
+				200000000000000000000026 /* CricketMprPracticeView.swift in Sources */,
+				200000000000000000000027 /* ImpactPracticeViewModel.swift in Sources */,
+				200000000000000000000028 /* ImpactPracticeView.swift in Sources */,
+				200000000000000000000029 /* ImpactReportView.swift in Sources */,
+				20000000000000000000002A /* VersusViewModel.swift in Sources */,
+				20000000000000000000002B /* VersusFlowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

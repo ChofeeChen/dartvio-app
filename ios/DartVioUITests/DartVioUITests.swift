@@ -210,6 +210,86 @@ final class DartVioUITests: XCTestCase {
         wait(for: [gone], timeout: 5)
     }
 
+    // MARK: - 新增练习模式的冒烟（V6–V10）
+
+    /// 极速挑战：目标分随机，只能用与目标无关的路径断言（三镖 MISS ⇒ 未完成）。
+    func testV6CheckoutRush() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "极速挑战")).firstMatch.tap()
+
+        XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
+        for _ in 0..<3 { app.buttons["MISS"].tap() }
+        XCTAssertEqual(app.staticTexts["rushResult"].label, "未完成")
+
+        // 定局后给出的是「下一题」（跳过 / 重做只在做题阶段可用），用它验题号推进
+        app.buttons["rushNext"].tap()
+        XCTAssertTrue(app.staticTexts["rushProgress"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["rushProgress"].label.contains("第 2 / 10 题"))
+    }
+
+    /// 99 Darts：单倍 = 1 分，与扇区无关，可以精确断言总分。
+    func testV7NinetyNine() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "99 Darts")).firstMatch.tap()
+
+        app.buttons["nnSector20"].tap()
+        XCTAssertTrue(app.staticTexts["nnTotal"].waitForExistence(timeout: 10))
+        app.buttons["nnHitS"].tap()
+        XCTAssertEqual(app.staticTexts["nnTotal"].label, "1")
+        XCTAssertTrue(app.staticTexts["nnProgress"].label.contains("已投 1 / 99 镖"))
+    }
+
+    /// Cricket MPR：MPR 与评级都由 shared 计算，这里只验「能进、能记镖、MPR 有值」。
+    func testV8CricketMpr() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cricket MPR")).firstMatch.tap()
+
+        let mpr = app.staticTexts["mprValue"]
+        XCTAssertTrue(mpr.waitForExistence(timeout: 10))
+        XCTAssertFalse(mpr.label.isEmpty)
+        app.buttons["MISS"].tap()
+        XCTAssertTrue(app.staticTexts["mprMeta"].waitForExistence(timeout: 5))
+    }
+
+    /// 精准工坊：自绘点选靶记为一次落点。
+    func testV9Impact() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "精准工坊")).firstMatch.tap()
+
+        app.buttons["impactStart"].tap()
+        let pad = app.otherElements["impactPad"]
+        XCTAssertTrue(pad.waitForExistence(timeout: 10))
+        pad.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.staticTexts["impactCounter"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["impactCounter"].label.contains("投 1 镖"))
+    }
+
+    /// 双人对抗：六个模式共用一套页面，拿列表第一项 Bull 之争验通道。
+    func testV10VersusBattle() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["练习"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
+
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Bull 之争")).firstMatch.tap()
+        app.buttons["versusStart"].tap()
+
+        XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 10))
+        for _ in 0..<3 { app.buttons["MISS"].tap() }
+        let endRound = app.buttons["versusEndRound"]
+        XCTAssertTrue(endRound.waitForExistence(timeout: 5))
+        endRound.tap()
+        XCTAssertTrue(app.staticTexts["versusCaption"].waitForExistence(timeout: 5))
+    }
+
     // MARK: - 辅助
 
     /// 录一镖 20：数字 2、0 进 buffer，确认投出（KeypadView 的录入语义）。

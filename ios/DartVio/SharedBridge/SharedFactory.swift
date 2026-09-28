@@ -103,6 +103,72 @@ enum SharedFactory {
         )
     }
 
+    /**
+     * 极速挑战的一次尝试记录。
+     *
+     * `RushAttemptRecord` 在 Kotlin 侧有 **17 个带默认值的字段**，ObjC 全部导出成必填，
+     * 所以这里收敛成一个 Swift 侧只用得上的小参数列表，其余按训练口径写死：
+     * 本题就是 Double Out + 标准靶（`rushLegState` 那一局的口径），录入方式只有逐镖键盘。
+     */
+    static func rushAttemptRecord(
+        target: Int32,
+        difficulty: RushDifficulty,
+        darts: [Dart],
+        throwElapsedMs: Int64,
+        routeHintUsed: Bool,
+        result: RushResult,
+        remainingAfter: Int32,
+        bustReason: BustReason?,
+        createdAt: Int64
+    ) -> RushAttemptRecord {
+        RushAttemptRecord(
+            id: 0,
+            sessionId: Self.rushSessionId,
+            createdAt: createdAt,
+            target: target,
+            outMode: OutMode.doubleOut,
+            bullMode: BullMode.standard2550,
+            difficulty: difficulty,
+            darts: darts,
+            inputMode: DartSource.dartByDart,
+            throwElapsedMs: throwElapsedMs,
+            inputElapsedMs: throwElapsedMs,
+            routeHintUsed: routeHintUsed,
+            result: result,
+            remainingAfter: remainingAfter,
+            bustReason: bustReason,
+            retryOfAttemptId: 0,
+            timingInvalidated: false
+        )
+    }
+
+    /// iOS 侧暂无 Room / 云端会话表，用固定 sessionId 占位；将来接持久化时换成真 UUID。
+    static let rushSessionId = "ios_local_rush"
+
+    // MARK: - 双人对抗
+
+    /**
+     * 在引擎给的**推荐默认配置**上改一处：目标分。
+     *
+     * `BattleConfig` 有 11 个字段且默认值不导出，所以走 `doCopy` 而不是重新拼 init；
+     * 这样「每个模式的推荐默认值」（`defaultConfig`）仍然只有 shared 一处定义，
+     * iOS 只覆盖用户实际改了的那一格 —— 环游类传 0 表示「不由目标分决定胜负」。
+     */
+    static func versusConfig(modeKey: String, base: BattleConfig, targetScore: Int32) -> BattleConfig {
+        base.doCopy(
+            modeKey: modeKey,
+            targetSector: base.targetSector,
+            targetScore: targetScore,
+            targetScores: base.targetScores,
+            startSteps: base.startSteps,
+            splitBull: base.splitBull,
+            tripleOnlySeats: base.tripleOnlySeats,
+            doubleOnly: base.doubleOnly,
+            singleHitAdvance: base.singleHitAdvance,
+            finishOnBull: base.finishOnBull
+        )
+    }
+
     // MARK: - AI
 
     /** Kotlin 侧 `ppr` 是 Double（导出为 `double`），这里别写成 Float。 */

@@ -17,6 +17,11 @@ enum SharedAccess {
     static let randomCheckoutRules = RandomCheckoutRules.shared
     static let checkoutSolver = CheckoutSolver.shared
 
+    static let checkoutRushRules = CheckoutRushRules.shared
+    static let ninetyNineRules = NinetyNineRules.shared
+    static let cricketMprRules = CricketMprRules.shared
+    static let checkoutTargetFactory = CheckoutTargetFactory.shared
+
     /**
      * ⚠️ `kotlin.random.Random` 是**抽象类**，不能 `new`。
      *

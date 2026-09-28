@@ -59,7 +59,13 @@ struct PracticeEntryView: View {
         }
 
         /// true = iOS 已实现。改这里就是在改「双端对齐进度」，别在别处再维护一份清单。
-        var isReady: Bool { self == .countUp || self == .randomCheckout }
+        var isReady: Bool {
+            switch self {
+            case .countUp, .randomCheckout, .checkoutRush, .ninetyNine,
+                 .cricketMpr, .impact, .aiPractice, .versus: return true
+            default: return false
+            }
+        }
     }
 
     var body: some View {
@@ -82,6 +88,22 @@ struct PracticeEntryView: View {
             switch mode {
             case .countUp: CountUpPracticeView()
             case .randomCheckout: RandomCheckoutPracticeView()
+            case .checkoutRush: CheckoutRushPracticeView()
+            case .ninetyNine: NinetyNineSetupView()
+            case .cricketMpr: CricketMprPracticeView()
+            case .impact: ImpactSetupView()
+            // AI 对战练习 = 直接开一局 vs AI 的 X01（Android 侧是 versusLocked 的对局设置），
+            // 所以复用现有对局页，只是把参数写死成练习口径：301 / 直入 / 双倍出 / 高级 AI。
+            case .aiPractice: X01GameView(launch: X01Launch(
+                targetScore: 301,
+                modeRaw: "casual",
+                legsToWin: 1,
+                outModeRaw: "doubleOut",
+                inModeRaw: "straightIn",
+                smartAi: true,
+                difficultyRaw: "advanced"
+            ))
+            case .versus: VersusListView()
             default: unreachablePlaceholder(mode)
             }
         }
