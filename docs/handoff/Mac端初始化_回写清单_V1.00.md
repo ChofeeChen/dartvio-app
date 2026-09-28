@@ -1462,4 +1462,77 @@ Release : 同上
 
 ---
 
-_（第 6 轮：其余练习 / 对抗模式的补齐结果将追加于此）_
+
+## 14. Mac 端记录（2026-09-28）：补齐全部剩余练习模式 + 双人对抗 6 模式
+
+> 用户要求「逐个完成剩余练习模式，完成后直接做双人对抗 6 个模式」，本轮一次性做完。
+
+### 14.1 新增清单
+
+| 模式 | 文件（`ios/DartVio/Features/`） | 关键点 |
+| --- | --- | --- |
+| 极速挑战 | `Practice/CheckoutRushViewModel.swift` `CheckoutRushPracticeView.swift` `CheckoutRushReportView.swift` | 10 题一场；成功率 / 连胜 / 爆分统计全部走 `CheckoutRushStatistics.of(records:)` |
+| 99 Darts | `Practice/NinetyNineViewModel.swift` `Practice/NinetyNinePracticeView.swift`（含选扇区页） | 99 镖 = 33 轮 × 3；结果是 S / D / T / MISS 四种，因此**没有**复用通用数字键盘 |
+| Cricket MPR | `Practice/CricketMprViewModel.swift` `Practice/CricketMprPracticeView.swift` | MPR 与评级均由 shared 输出（`formatMpr` / `mprRating`），iOS 不重算 |
+| 精准工坊 | `Practice/ImpactPracticeViewModel.swift` `ImpactPracticeView.swift`（设置 + 点选靶） `ImpactReportView.swift` | 见 §14.2 |
+| AI 对战练习 | 复用 `Game/X01GameView` | 练习口径写死：301 / 直入 / 双倍出 / 高级 AI |
+| 双人对抗 6 模式 | `Versus/VersusViewModel.swift` `Versus/VersusFlowView.swift`（列表→配置→对战→战报） | 见 §14.3 |
+
+练习中心（`Features/Root/RootTabsView.swift`）的 8 张卡**全部点亮**，不再是「只有 Count Up」。
+
+### 14.2 精准工坊：iOS 自己补了一个组件
+
+`BoardTapPad` 是回写清单 §3 列的「iOS 缺失 5 个通用组件」之一，本轮补上（`ImpactPracticeView.swift`
+里的 `ImpactBoardTapPad`）。为什么不像 Count Up 那样复用键盘：**这个练习要的是落点坐标而不是得分** ——
+键盘只能回答「打到哪一格」，而 Impact 分析需要「偏离目标多少毫米」。
+
+坐标换算全部交给 shared（视窗 `ImpactWindow.viewportOf` → 毫米；命中判定 `ImpactMissBand.bandAt`），
+iOS 侧只产出归一化坐标。
+
+### 14.3 双人对抗：一套页面覆盖 6 个模式
+
+关键前提是 commonMain 的 `VersusRule` 接口统一，且 `VersusModes.ruleOf(modeKey:)` 能按 modeKey 取出引擎实例。
+所以 iOS **没有为每个模式写一个页面**：列表直接从 `VersusModes.ALL` 取（将来加第 7 个模式时两端都不会漏），
+配置 / 对战 / 战报三页共用。
+
+### 14.4 UI 测试抓到的两个真 bug（都是我自己新写的代码）
+
+1. **极速挑战「三镖投完」不算做完**：引擎的 `isTerminal` 只覆盖「结镖 / 爆分」两种**已分胜负**的情形，
+   三镖没完成时它返回 false。把它当唯一判定会让这一题永远卡在做题态。
+   → 引入 `isQuestionOver = isTerminal || darts.count >= MAX_DARTS`（对应 `RushResult.NOT_FINISHED`）。
+2. **精准工坊一点算两镖**：`throwCount` 写成了 `frames.count + outCount`，而 `record` 对**每一镖**
+   （含脱靶）都会留一个 frame，脱靶那一镖于是被算了两遍 → 改为 `frames.count`。
+   这条是 V9 UI 测试先报出来的（取证转储显示「投 2 镖」）。
+
+### 14.5 本轮新增的导出踩坑（接 §13.4）
+
+| 现象 | 正确写法 |
+| --- | --- |
+| Kotlin enum 成员与 ObjC 关键字冲突 | `SectorHit.DOUBLE` → **`SectorHit.double_`**（同 `doNewLeg` / `doNewTarget` 的转义家族） |
+| sealed class 子类 | `DartEvent.Scored` / `.Win`（不是 `DartEventScored`） |
+| 常量保留原名 | `VersusModes.shared.ALL`、`.BULL_BATTLE`（不是小写） |
+| 首参标签被导入规则吃掉 | `ImpactWindow.spanY(spanMm:)`、`ImpactFrames.of(target:xMm:yMm:)`、`ImpactCalculator.headline(stats:)` 等 **按编译器提示逐个改**（所以接新引擎时应先 build 一次再写 UI） |
+| 纯 Shape 容器测不到 | 必须显式 `.accessibilityElement()`，否则 UI 测试找不到该元素、tap 落在空处 |
+
+### 14.6 还剩什么没对齐（诚实清单）
+
+| 缺口 | 阻塞方 |
+| --- | --- |
+| 数据 / 成就 / 排行榜 Tab | **WCB D4**（`domain/{stats,achievement,leaderboard}` 未下沉） |
+| 联机大厅 8 条路由 | **WCB D5**（网络层 `net.online` 未下沉） |
+| Cricket **正式对局**（设置两页 + 对局页） | Mac（引擎已下沉，纯 UI 工作量，本轮排期用完） |
+| 设置 / 隐私 / 反馈 / Beta 门禁 | Mac（多为 `:app` 私有的 `data.theme` / `data.beta`） |
+
+### 14.7 回归结果
+
+```
+** TEST SUCCEEDED **
+V2 导航 / V3 结镖 / V3 回合流转 / V4 Count Up   passed
+V5 随机结镖 / V6 极速挑战 / V7 99 Darts         passed
+V8 Cricket MPR / V9 精准工坊 / V10 双人对抗      passed
+Executed 10 tests, with 0 failures
+```
+
+---
+
+_（第 6 轮：Cricket 正式对局与设置页的结果将追加于此）_
