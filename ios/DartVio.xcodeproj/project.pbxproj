@@ -21,7 +21,33 @@
 		20000000000000000000001B /* KeypadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001B /* KeypadView.swift */; };
 		20000000000000000000001C /* GameCommon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001C /* GameCommon.swift */; };
 		20000000000000000000001D /* DartVioUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* DartVioUITests.swift */; };
+		5FF90B41306A68AC00C80187 /* shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; };
+		5FF90B42306A68AC00C80187 /* shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5FF90B40306A68AC00C80187 /* shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		800000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 500000000000000000000002 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000001;
+			remoteInfo = DartVio;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5FF90B43306A68AC00C80187 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5FF90B42306A68AC00C80187 /* shared.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		100000000000000000000010 /* DartVioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DartVioApp.swift; sourceTree = "<group>"; };
@@ -41,6 +67,7 @@
 		10000000000000000000001E /* DartVio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DartVio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		10000000000000000000001F /* DartVioUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DartVioUITests.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* DartVioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DartVioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5FF90B40306A68AC00C80187 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = build/Frameworks/shared.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +75,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5FF90B41306A68AC00C80187 /* shared.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +95,7 @@
 				300000000000000000000002 /* DartVio */,
 				30000000000000000000000B /* Scripts */,
 				30000000000000000000000D /* DartVioUITests */,
+				5FF90B3F306A68AC00C80187 /* Frameworks */,
 				30000000000000000000000C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -180,27 +209,36 @@
 			path = DartVioUITests;
 			sourceTree = "<group>";
 		};
+		5FF90B3F306A68AC00C80187 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5FF90B40306A68AC00C80187 /* shared.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
-/* Begin PBXContainerItemProxy section */
-		800000000000000000000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 500000000000000000000002 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 500000000000000000000001;
-			remoteInfo = DartVio;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXTargetDependency section */
-		800000000000000000000002 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 500000000000000000000001 /* DartVio */;
-			targetProxy = 800000000000000000000001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXNativeTarget section */
+		500000000000000000000001 /* DartVio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000002 /* Build configuration list for PBXNativeTarget "DartVio" */;
+			buildPhases = (
+				400000000000000000000004 /* Build Kotlin shared framework */,
+				400000000000000000000001 /* Sources */,
+				400000000000000000000002 /* Frameworks */,
+				400000000000000000000003 /* Resources */,
+				5FF90B43306A68AC00C80187 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DartVio;
+			productName = DartVio;
+			productReference = 10000000000000000000001E /* DartVio.app */;
+			productType = "com.apple.product-type.application";
+		};
 		500000000000000000000003 /* DartVioUITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 700000000000000000000003 /* Build configuration list for PBXNativeTarget "DartVioUITests" */;
@@ -217,24 +255,6 @@
 			productName = DartVioUITests;
 			productReference = 100000000000000000000020 /* DartVioUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
-		};
-		500000000000000000000001 /* DartVio */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 700000000000000000000002 /* Build configuration list for PBXNativeTarget "DartVio" */;
-			buildPhases = (
-				400000000000000000000004 /* Build Kotlin shared framework */,
-				400000000000000000000001 /* Sources */,
-				400000000000000000000002 /* Frameworks */,
-				400000000000000000000003 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = DartVio;
-			productName = DartVio;
-			productReference = 10000000000000000000001E /* DartVio.app */;
-			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -287,19 +307,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "set -e\n\"$SRCROOT/Scripts/link-shared.sh\"\n";
+			shellScript = "set -e\n\"$SRCROOT/Scripts/link-shared.sh\"\n\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		400000000000000000000005 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				20000000000000000000001D /* DartVioUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		400000000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -320,7 +332,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		400000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20000000000000000000001D /* DartVioUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		800000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000001 /* DartVio */;
+			targetProxy = 800000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		600000000000000000000001 /* Debug */ = {
@@ -343,6 +371,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CODE_SIGN_FLAGS = "";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -363,6 +392,7 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CODE_SIGN_FLAGS = "";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
@@ -372,22 +402,21 @@
 		600000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				/*
-				 * 只编 arm64：Kotlin 侧只声明了 iosArm64 + iosSimulatorArm64（没有 iosX64），
-				 * 若按 Xcode 默认的 $(ARCHS_STANDARD) 去编模拟器，会多出一个 x86_64 链接，
-				 * 而 shared.framework 里没有这一切片 → symbol(s) not found for architecture x86_64。
-				 * Intel Mac 需要模拟器时，得先给 Kotlin 补 iosX64() 再放开这里。
-				 */
 				ARCHS = arm64;
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_ALLOWED = yes;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 18;
+				DEVELOPMENT_TEAM = P5FGHR787N;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/Build/Frameworks";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/Build/Frameworks",
+					"$(PROJECT_DIR)/build/Frameworks",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.18;
+				OTHER_CODE_SIGN_FLAGS = "--deep";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -408,15 +437,21 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_ALLOWED = yes;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 18;
+				DEVELOPMENT_TEAM = P5FGHR787N;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/Build/Frameworks";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/Build/Frameworks",
+					"$(PROJECT_DIR)/build/Frameworks",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.18;
+				OTHER_CODE_SIGN_FLAGS = "--deep";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
