@@ -1316,4 +1316,82 @@ __attribute__((swift_name("CountUpEngineKt")))
 
 ---
 
-_（第 5 轮：D6 工厂接入 + 真机调试的结果将追加于此）_
+## 12. Mac 端记录（2026-09-28）：真机调试跑通（App 已装到 iPhone）
+
+> 本节由 Mac 端协助记录。**这次的真机修复是用户本人在 Xcode 里完成的**（步骤清单见 §11.5），
+> Mac 端负责：核对改动内容、确认没破坏模拟器侧、量化副作用、把配置缺陷挑出来。
+
+### 12.1 结果
+
+✅ DartVio 已安装到 iPhone 并可正常打开运行。之前的报错是「可执行文件未签名 / 无法验证完整性」。
+
+### 12.2 一个反直觉但已经核实清楚的事实：**静态 framework 也需要 Embed & Sign**
+
+我原本的设计是 `isStatic = true`，初衷就是「只链接、不 embed、不签名」（见 §9.1 / §9.3）。
+所以看到 Embed & Sign 的第一反应是担心链接模型被改坏了 —— 实测下来**并没有**，证据如下：
+
+| 对象 | 实测 |
+| --- | --- |
+| 源 `shared.framework/shared` | `current ar archive`，29 MB（`isStatic = true` 未动，gradle 也没改） |
+| Kotlin 代码最终在哪 | 主二进制 `DartVio.app/DartVio.debug.dylib`（8.3 MB）里能查到 `_kfun` 符号 → **仍是静态链进主程序** |
+| App 包内 `Frameworks/shared.framework/shared` | 模拟器 33 KB / 真机 51 KB，install name `@rpath/shared.framework/shared`，**符号表为空**，只依赖 libSystem |
+| App 总大小 | 8.4 MB，其中 `Frameworks/` 只占 44 KB |
+
+所以 App 包里那份是个**空壳 stub**，29 MB 的静态归档并没有被搬进 App —— 体积完全没吃亏。
+
+**那为什么加了 Embed & Sign 就能装上？** 合理推断是：它让 Xcode 对 `Frameworks/` 目录
+补了一轮符合安装校验的签名，而不是真的在分发动态库。
+代价只有 44 KB，**建议保留**（为了这 44 KB 去改回原样，反而可能重新装不上，不划算）。
+
+这与 §9.1「静态就不必 embed & sign」的判断有出入 —— **以实测为准**，§9.1 的说法应按本节修正：
+静态 framework 免的是「把代码打进 Framework 目录」，免不了「安装时的签名完整性校验」。
+
+### 12.3 ⚠️ 还剩两处签名配置建议收拾（需要你点头我再动，改完要重新装一次验证）
+
+当前 target 级的实际配置（都是这次调试带进来的）：
+
+```
+DartVio target Debug  : CODE_SIGN_STYLE=Automatic, DEVELOPMENT_TEAM=P5FGHR787N,
+                        OTHER_CODE_SIGN_FLAGS="--deep"
+DartVio target Release: 同上 + CODE_SIGN_IDENTITY="Apple Distribution"
+```
+
+1. **`--deep` 其实没删干净**：你在**项目级**清掉了 `OTHER_CODE_SIGN_FLAGS`，
+   但 **target 级**（Debug / Release 各一份）里 `--deep` 仍在，而 target 级优先级更高 —— 它现在还在生效。
+   Apple 明确不建议在构建里用 `--deep`（它会重签嵌套 bundle，可能覆盖已有签名），
+   也正是你之前说的「破坏主程序与描述文件原生绑定」的那一个参数。
+2. **Release 的 `CODE_SIGN_IDENTITY = "Apple Distribution"`**：免费 Apple ID **拿不到分发证书**，
+   将来做 Archive / Release 构建会以相当迷惑的方式失败。建议 Release 也回到默认的 Apple Development 自动签名，
+   等哪天要上架再单独配。
+
+另有两处小的，不急但记一笔：
+
+- pbxproj 里 framework 的引用路径是 **`build/Frameworks`**（小写 b），而脚本产出在 **`Build/Frameworks`**。
+  APFS 默认不区分大小写所以现在能跑，换到区分大小写的卷会直接断。
+- `DEVELOPMENT_TEAM = P5FGHR787N` 已随 pbxproj 提交。单台 Mac 无碍；将来迁到第二台机器（T7）时需要改。
+
+### 12.4 模拟器侧回归：改动没有副作用
+
+真机配置改完之后，四个 UI 测试重跑一遍仍然全绿：
+
+```
+** TEST SUCCEEDED **
+testV2Navigation passed (21.6s) / testV3CheckoutGameShot passed (28.2s)
+testV3X01GameFlow passed (17.6s) / testV4CountUpFlow passed (41.3s)
+Executed 4 tests, with 0 failures
+```
+
+边界也守住了：`commonMain/` 与 `shared/build.gradle.kts` **都没被改动**，
+这次只动了 `ios/DartVio.xcodeproj/project.pbxproj`。
+
+### 12.5 下一步
+
+| 序 | 事项 | 归属 | 阻塞关系 |
+| --- | --- | --- | --- |
+| ① | 决定要不要清掉 §12.3 的两处签名配置 | **用户**（在 Xcode 里改，重装一次验证） | 不阻塞其它事；App 现在能跑 |
+| ② | D6：commonMain 加工厂（`emptyRoundScores()` 之类） | WCB | iOS 侧改动面只有 `SharedFactory` 一处 |
+| ③ | 提示词 V1.02（累计两处更正：`listOf()` 写法、`CountUpEngineKt.COUNT_UP_ROUNDS`） | WCB | 不阻塞 |
+
+---
+
+_（第 6 轮：D6 工厂接入的结果将追加于此）_
