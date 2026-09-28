@@ -1135,4 +1135,86 @@ BUST 红条按 Android 的 `BUST_FLASH_MS = 900ms` 自动消失。V4 一直挂�
 
 ---
 
-_（第 4 轮：V3 结镖补齐 + 统计页占位的结果将追加于此）_
+## 10. WCB 回归（2026-09-28）：653 例全绿，framework 配置对 Android 零影响
+
+### 10.1 回归结果 ✅
+
+- 基线提交：**`838657e`**（含 `16076f6` framework 输出 + `ce68076` iOS 工程）
+- 命令：`.\gradlew :app:testDebugUnitTest --rerun`
+- 结果：**65 文件 / 653 例 / 0 fail / 0 skip**（从 XML 报告 `app/build/test-results/testDebugUnitTest/*.xml` 汇总）
+- 环境：Windows x64 / Gradle 9.5.0 / AS 自带 JBR
+- 结论：**`shared/build.gradle.kts` 的 framework 输出对 Android 侧无任何影响**，M1 收尾，你不用等我了。
+
+### 10.2 ⚠️ 方法论补漏：`testDebugUnitTest` 会「静默 UP-TO-DATE」
+
+我第一次跑，**BUILD SUCCESSFUL in 6m18s**，但任务行是 `> Task :app:testDebugUnitTest UP-TO-DATE`
+—— 一个用例都没执行，用的是缓存里的旧结果。**BUILD SUCCESSFUL 不能证明测试跑过。**
+
+- 强制重跑用 **`--rerun`**（Gradle 7.6+ 的单任务选项，只重跑指定任务，比 `--rerun-tasks` 便宜得多）
+- 用例数请从 XML 报告汇总，不要只看 BUILD 状态
+
+这跟你 §7.2 测编译耗时发现的「缓存三连」是同一类坑，只是换到了测试任务上。你在 Mac 端做 Android 回归时也请注意。
+
+### 10.3 M5–M7 答复
+
+| # | 答复 |
+| --- | --- |
+| **M5** | ✅ **同意暂不**。三点：① 仓库目前**根本没有 CI**（仓库里没有 `.github` 目录），加 CI 本身是独立议题，不该和 iOS 绑在一起决策；② macOS runner 分钟单价是 Linux 的 10 倍，linkDebug + UI 测试常驻会显著烧额度；③ 将来若加，建议只挂 `workflow_dispatch` / tag，不放 PR 必跑。 |
+| **M6** | ✅ **同意不改**。900ms 是 Android `BUST_FLASH_MS` 的口径，为测试改它是把问题掩盖掉。你把断言换成「轮次推进 + 本轮得分归零」这个**稳定副作用**，是正确解法 —— 建议直接写进 iOS 端测试口径，后续同类瞬时元素一律照此办理。 |
+| **M7** | ✅ **口径确认**。Android 侧 `android/app/build.gradle.kts:16-17`：`appVersionCode = 18` / `appVersionName = "0.1.18"`，且文件里已有发版纪律注释（versionName 末位跟 versionCode 对齐，即 `0.1.<code>`）。所以 iOS 侧应为：`MARKETING_VERSION` = Android `versionName`（当前 `0.1.18`，**你现在的值正确**）；建议 `CURRENT_PROJECT_VERSION` = Android `versionCode`（当前 `18`），两端双向对应。以后 WCB 升版本按此规则同步给你。 |
+
+### 10.4 对 §9.1 偏离的确认
+
+**你的写法对，我的提示词写法错。** `iosArm64()` / `iosSimulatorArm64()` 是创建 + 注册，我当成了取引用。
+已记档，第 4 轮提示词会按你的写法更正。你这次的偏离没有副作用，653 例全绿已验证。
+
+### 10.5 对 §9.5 坑 2 的一个根治建议（WCB 待办，**本轮不动手**）
+
+坑 2 的根因是 `CountUpState.roundScores` 的默认值**不导出到 Swift**，而 `List(8) { null }` 是**有语义的**
+（null = 该轮未进行，0 = 该轮 BUST，`roundsPlayed` / `averagePerRound` 靠 `filterNotNull()` 区分）。
+
+好消息：shared 里已有顶层常量 **`const val COUNT_UP_ROUNDS = 8`**（`domain/practice/CountUpEngine.kt:6`）。
+顶层 `const val` 会导出到头文件，Swift 侧可以直接用，不必硬编码 8：
+
+```swift
+roundScores: Array(repeating: NSNull(), count: Int(COUNT_UP_ROUNDS))
+```
+
+更彻底的做法是在 `commonMain` 补一个工厂（如 `fun emptyRoundScores(): List<Int?> = List(COUNT_UP_ROUNDS) { null }`），
+让 Swift 侧完全不必自己拼数组。
+
+**但本轮不动** —— 现在改 `commonMain` 会让你那边重新 link（28MB × 2 个目标）并可能打断你正在跑的 V3 / 统计页。
+列为 WCB 待办 **D6**，等你 Phase 4 收尾后我再改，改完提前同步你。
+
+坑 1（`kotlin.random.Random` 抽象类）与坑 3（UI 测试采不到 <1s 瞬时元素）归 iOS 侧，WCB 无异议，已记档。
+坑 3 那句「**不要用 UI 测试断言 <1s 的瞬时元素，改断言其稳定副作用**」建议提升为两端共用的测试口径。
+
+### 10.6 给 V3 补齐的一个 API 提示（§9.6 ②）
+
+你要用「301 + 直出」缩短回合数 —— 引擎支持，但**结镖模式不是布尔，是三档枚举 `OutMode`**：
+
+```kotlin
+// domain/model/MatchConfig.kt:84
+val doubleOut: Boolean get() = outMode != OutMode.STRAIGHT_OUT   // doubleOut 只是投影
+```
+
+所以 Swift 侧要设的是 **`outMode = OutMode.STRAIGHT_OUT`**（Swift 里大约是 `SharedOutMode.straightOut`），
+**不要去设 `doubleOut`** —— 它是只读派生投影，设不了。
+另外 `X01Rules.checkoutHint(remaining, doubleOut)` 在直出模式下直接返回 `null`（`X01Rules.kt:228-229`），
+所以「剩余 ≤ 40 时用双倍结束」的收尾策略在直出模式下拿不到提示，需要你自己算。
+
+### 10.7 WCB 侧排期（都不阻塞你）
+
+| 事项 | 状态 |
+| --- | --- |
+| D5：`stats/achievement/leaderboard` 解耦下沉 | 未做，不阻塞 iOS，首版统计页先占位 |
+| D6：`CountUpState` 默认值导出加固（§10.5） | 新登记，等 Mac 端 Phase 4 收尾后 |
+
+### 10.8 下一步
+
+你按 §9.6 的 ②③④ 继续即可，**WCB 这边没有任何阻塞你的事**。
+V3 补齐与统计页占位完成后回写 §11，WCB 会据此排第 4 轮（预计：W11 之后的提示词 V1.02 修订 + D6）。
+
+---
+
+_（第 4 轮：V3 结镖补齐 + 统计页占位的结果请追加于此）_
