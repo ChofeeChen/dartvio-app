@@ -1,6 +1,8 @@
-版本 V1.00 \| 2026-09-27 \| 给 **MacBook 端 CodeBuddy** 的执行提示词（跨机交接用，不是 PRD；PRD 唯一现行版仍在 `docs/prd/`）
+版本 V1.01 \| 2026-09-28 \| 修订 §4「已知的坑」：原对 `NSDate()` / `NSUUID()` 构造被禁用的**预判与 Mac 端实测相反**；§4 / §6 补 2026-09-28 验收结果与 M1 批复
 
-> 使用方式：把本文件**整段复制**到 Mac 端 CodeBuddy 对话框，或 clone 后让它「读 `docs/handoff/Mac端初始化_提示词_V1.00.md` 并按此执行」。
+> 变更记录：V1.00（2026-09-27）初版。
+
+> 使用方式：把本文件**整段复制**到 Mac 端 CodeBuddy 对话框，或 clone 后让它「读 `docs/handoff/Mac端初始化_提示词_V1.01.md` 并按此执行」。
 > Windows 与 Mac 的对话上下文**不共享**，本文件是两边唯一的交接媒介，请严格按里面的路径与命令执行。
 
 ---
@@ -22,7 +24,7 @@ Android 端继续 Jetpack Compose，**iOS 端由你负责：Swift + SwiftUI 原�
 - **Mac = iOS 开发 / 出包**，Apple 证书 / `.p12` / `.mobileprovision` 只留在 Mac，**绝不提交进仓库**（`.gitignore` 已排除，但别用 `-f` 强加）。
 - 两端共用**同一套 versionCode**：唯一出处是 `android/app/build.gradle.kts` 顶部的 `appVersionCode`（当前 **18**，`versionName = 0.1.18`）。iOS 侧 `CFBundleShortVersionString = 0.1.<code>`。**不要**在 Mac 上另立版本号。
 
-**第一步先做这件事**：读仓库根的 `CODEBUDDY.md`（项目单一上下文入口）和 `docs/prd/T7_双机双平台迁移准备清单_V1.04.md`，了解全局后再动手。
+**第一步先做这件事**：读仓库根的 `CODEBUDDY.md`（项目单一上下文入口）和 `docs/prd/T7_双机双平台迁移准备清单_V1.05.md`，了解全局后再动手。
 
 ## 1. 拉代码
 
@@ -75,9 +77,13 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - 若失败且**不是**环境问题：停下来回写，不要在 Mac 端自行改业务代码。
 - 若只是 SDK 路径问题：确认 `~/Library/Android/sdk` 存在，或 `local.properties` 里补 `sdk.dir=...`（**这个文件不入库，别提交**）。
 
-## 4. 关键一步：验证 iOS 目标能否编过（Windows 端从未验证过）
+## 4. 关键一步：验证 iOS 目标能否编过
 
-这是本次**唯一有技术风险**的环节。`shared` 的 iOS 目标需要 Xcode 工具链，Windows 上编不了，所以下面这段 Kotlin/Native 代码**从未编译过**：
+> ✅ **2026-09-28 已验证通过**（Mac 端 Xcode 27.0 / Kotlin 2.2.10 / Gradle 9.5.0）：
+> `:shared:compileKotlinIosSimulatorArm64` 与 `:shared:compileKotlinIosArm64` **均 BUILD SUCCESSFUL**，0 error。
+> 若你是首次在新机器上执行，本节仍是唯一有技术风险的环节；若只是复跑，"从未编译过"这个背景已不成立。
+
+这是本次**唯一有技术风险**的环节。`shared` 的 iOS 目标需要 Xcode 工具链，Windows 上编不了，所以下面这段 Kotlin/Native 代码在 Windows 端**从未编译过**：
 
 `android/shared/src/iosMain/kotlin/com/dartvio/app/platform/PlatformTime.ios.kt`
 
@@ -88,10 +94,22 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 首次编译 Kotlin/Native 会下载 konan 工具链，较慢，属正常。
 
-**已知的坑，请优先按这个思路修**：
-- Kotlin/Native 对部分 ObjC 类**禁用了 `init()`**。若 `NSDate()` / `NSUUID()` 报「Constructor ... is not available」，改用工厂方法：`NSDate.date()`、`NSUUID.UUID()`。
-- ObjC 方法 `secondsFromGMTForDate:` 的 Kotlin 绑定，可能是函数 `secondsFromGMTForDate(date)` 也可能是属性；按编译器报错提示调整即可。
-- `NSTimeZone.systemTimeZone` 是类属性；取偏移要**按具体时刻**取（夏令时切换日前后偏移不同），**不要**改成「当前偏移」的写法——这是 Android 端刻意的口径，改了两端就不一致。
+**已知的坑（2026-09-28 已按 Mac 端实测校准，详见回写清单 §4.3 的 API 可用对照表）**：
+
+> ⚠️ 下面第一条是 V1.00 写错的地方：当时预判「`NSDate()` / `NSUUID()` 构造被禁用、改用工厂方法」，
+> 实测**正好相反** —— 构造器可用，工厂方法反而不存在。若你按旧版本修过，请以本节为准。
+
+- `NSDate()` **可用**（就是 `+[NSDate date]`，即当前时刻）。反倒是 `NSDate.date()` /
+  `NSDate.dateWithTimeIntervalSince1970(...)` **不存在** —— 工厂方法已被映射成构造器。
+  取当前 epoch 毫秒：`((NSDate().timeIntervalSinceReferenceDate + NSTimeIntervalSince1970) * 1000.0).toLong()`
+  （`NSTimeIntervalSince1970` = 978307200.0，Foundation 常量 ✅ 可用）。
+- `NSUUID()` / `.UUIDString` **可用**，无需改。
+- `NSTimeZone.systemTimeZone` / `localTimeZone` / `defaultTimeZone` / `timeZoneWithName` **全部不存在**。
+  `NSTimeZone()` 虽能编译，但运行时 `name` 为 null —— 它不是系统时区，**不能用**。
+- 取某时刻的时区偏移改用 CoreFoundation：
+  `CFTimeZoneCopySystem()` + `CFTimeZoneGetSecondsFromGMT(tz, atMillis / 1000.0 - NSTimeIntervalSince1970)`，
+  需要 `@OptIn(ExperimentalForeignApi::class)`，用完 `CFRelease(tz)`。
+  仍要**按具体时刻**取（夏令时切换日前后偏移不同），**不要**改成「当前偏移」的写法——这是 Android 端刻意的口径，改了两端就不一致。
 
 修的原则：**只动 `iosMain` 的实现，不要改 `commonMain` 的口径**。口径是两端共用的唯一真源，改了会破坏 Android 的 653 例单测。
 如果你认为 `commonMain` 确实有问题，**停下来回写**，等 Windows 端确认后一起改。
@@ -124,6 +142,8 @@ git push
 - **不要**改 `shared/src/commonMain` 的口径，也不要在 `domain/` 里引入 `android.*` / `androidx.*` / `java.time` / `java.util.Calendar`。
 - 接入 Xcode 前需要给 `shared` 加 framework 输出配置（`binaries.framework { baseName = "shared"; isStatic = true }`），
   这会改 `shared/build.gradle.kts` —— 该文件 Windows 端也在用，**先写进回写清单，确认后再改**。
+  ✅ **2026-09-28 WCB 已批准**（回写清单 §8.1）：由 Mac 端改、Mac 端验，跑 `linkDebugFrameworkIosSimulatorArm64`；
+  约定改的时候**只加 framework 配置**，不顺手改 Kotlin / AGP 版本或 `compilerOptions`。
 
 ## 7. iOS 首版范围（背景，供你后续规划）
 

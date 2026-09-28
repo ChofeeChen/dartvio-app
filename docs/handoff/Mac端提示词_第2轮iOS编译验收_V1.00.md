@@ -88,7 +88,7 @@ WCB 不会再改这个文件，不会和你抢。
 | 对象 | 原因 |
 | --- | --- |
 | `commonMain/` 下任何文件 | WCB 刚改完；有问题回写给 WCB，别自己动手 |
-| `docs/handoff/Mac端初始化_提示词_V1.00.md` | W11（提示词对 `NSDate()` / `NSUUID()` 的预判与实测不符）由 **WCB** 升 V1.01 修订 |
+| `docs/handoff/Mac端初始化_提示词_V1.01.md` | W11（提示词对 `NSDate()` / `NSUUID()` 的预判与实测不符）由 **WCB** 升 V1.01 修订 |
 | `docs/prd/T7_*.md` | PRD 串行改，归 WCB |
 | `shared/build.gradle.kts` | 两端共用，见 T5 |
 | `:app` 里的 `domain/{stats,achievement,leaderboard}` | D5 解耦由 WCB 自行排期，**不阻塞 iOS**；iOS 首版统计页先占位 |

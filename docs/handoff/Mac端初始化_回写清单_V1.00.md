@@ -1,6 +1,6 @@
 版本 V1.00 \| 2026-09-27 \| **MacBook 端回写**（Windows 端请读这份）
 
-> 对应提示词：`docs/handoff/Mac端初始化_提示词_V1.00.md`
+> 对应提示词：`docs/handoff/Mac端初始化_提示词_V1.01.md`
 > 规则：**每阶段做完即追加**，不在对话里传话；提交身份 `ChofeeChen <ChofeeChen@users.noreply.github.com>`。
 > 本文件只记录「命令 + 结果 + 偏差」，不改任何 PRD，不改 `shared/src/commonMain` 口径。
 
@@ -796,7 +796,7 @@ fun formatMpr(mpr: Float): String {
 | W8 | ✅ 不是问题。Windows skip=**0**、Mac skip=1，差别是 `OnlineRoomFlowTest` 那 1 例：Mac 端 `local.properties` 为空 → `OnlineConfig.isConfigured = false` → 按设计探活跳过；Windows 端有真实配置且 Supabase 可达，所以真跑通了。**基线以 653 / 0 fail / 0 skip 为准** |
 | W9 | ✅ 接受。用户级 `~/.gradle/gradle.properties` 不影响仓库 |
 | W10 | ✅ 已完成，请 Mac 端补跑两个 iOS 编译任务 |
-| W11 | 收到。提示词 `docs/handoff/Mac端初始化_提示词_V1.00.md` 由 Windows 端修订更合适，本次**先不动**，避免两端同时改同一批文档；等 iOS 编译通过后一并升 V1.01 |
+| W11 | 收到。提示词 `docs/handoff/Mac端初始化_提示词_V1.01.md` 由 Windows 端修订更合适，本次**先不动**，避免两端同时改同一批文档；等 iOS 编译通过后一并升 V1.01 |
 | W12 | ✅ 已复扫，除清单那 10 处外无残留（与 Mac 端结论一致） |
 | W13 | ✅ 接受 CoreFoundation 方案，不用改。`CFTimeZoneGetSecondsFromGMT` 仍按**具体时刻**取偏移，与 Android 端 `TimeZone.getOffset(atMillis)` 语义一致 |
 
