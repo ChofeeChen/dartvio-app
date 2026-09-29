@@ -1840,3 +1840,92 @@ Executed 16 tests, with 0 failures
 - 真机 / 双端联调（需要先把自建后端跑起来，两端填同一 URL + anonKey）；
 - 观战页、邀请码、好友可见性（Android 有、iOS 未做）；
 - 大厅快照 `dartvio_room_state` 的写入（iOS 目前只读不写，列表靠 `dartvio_rooms`）。
+
+## 20. 第 11 轮：信息架构改造 + Cricket 键盘修正 + 联机后端指向
+
+### 20.1 训练中心改成「一页直达」`Features/Root/TrainingCenterView.swift`
+
+从 `HomeView.swift` 拆出独立文件（原来 3 个平铺 section，进双人训练还要再点一次列表）。
+
+```
+[ 单人训练 ]  [ 双人对抗训练 ]     ← 左右两张父卡，父标题是一条色带
+  › Count Up      › 6 个模式（来自 VersusModes.shared.ALL）
+  › 随机结镖
+  › 极速挑战
+  › 99 Darts
+  › Cricket MPR
+  › AI 对战练习
+[        精准工坊（通栏，整卡即按钮）      ]  ← 只有一个入口，不再包一层
+```
+
+- **父卡内列子入口**：归属靠「包含在卡片里 + `›` 前导标记」表达，不靠缩进深浅猜；
+- **六个对抗模式来自引擎注册表**，不在 iOS 侧抄清单（加第 7 个模式时两端都不漏）；
+- 精准工坊放两张父卡**下方**：先选对抗形态再进工坊，与真实训练顺序一致；
+- 仍用 `ScrollView` 不用 `List`（List 的屏幕外行不渲染，XCUITest 查不到）。
+
+### 20.2 首页卡片改为**相对卡片居中**
+
+`entryCard` 的 `VStack(alignment: .leading)` → 居中 + `multilineTextAlignment(.center)`。
+六张卡同宽而文字长短不一，居中后每张卡的视觉重心稳定，扫视时不用逐张重新定位。
+
+### 20.3 Cricket 必须用**自己的键盘** `Components/CricketKeypadView.swift`
+
+修的是「引用规则错误」：Cricket 对局页之前挂的是 X01 的 `KeypadView`（0–9 数字 buffer + 任意 1–20 扇区），
+会摆出一堆**点了也记不到凭证**的键（1 / 5 / 13 …）。新键盘对齐 Android `CricketKeypad`：
+
+- R1 `S / D / T + BULL 25 + BULL 50`；R2 `20 19 18 17`；R3 `16 15 + MISS + ⌫`；R4 确认（整行）
+- **数字键由 `config.cricketTargets` 推导**（不写死 15–20）：二期 random / tactics 变体换分区时键盘跟着换
+- 牛眼口径：Cricket 是 **BULL25 (`Dart(25,1)`) / BULL50 (`Dart(25,2)`)**，不是 X01 的「数字 + 倍率拼」
+- 满 3 镖不再接受加镖，但**退格与确认仍然可点**（第 3 镖录错要能退回，录满也要能交出去）
+
+### 20.4 去掉 X01 对局页两处纯空白
+
+1. `TurnDartsRow`：一镖未投时不摆三个空槽（3 块 38pt 空白），改一行「本回合 0 · 最多 3 镖」；
+2. `KeypadView`：顶部输入行只在 buffer / 提示有内容时才渲染（原来永远占 28pt，只有一个"—"）。
+
+### 20.5 设置页「开始对局」固定底部
+
+`X01SetupView` / `CricketSetupView` 用 `.safeAreaInset(edge: .bottom)` 放底部条
+（不是塞进滚动内容 —— 塞进去会随设置项滑走）。设置项再多，按钮位置不变。
+
+### 20.6 联机后端服务器（用户 2026-09-29 提供）
+
+| 项 | 值 |
+| --- | --- |
+| 机型 | 腾讯云轻量 **Ubuntu-X90X** |
+| IPv4 | **43.156.5.140** |
+| 域名 | **dartvio.win** |
+
+- iOS `OnlineConfig.defaultUrl`、Android `local.properties.example` 的 `ONLINE_URL` 均已指向 `https://dartvio.win`；
+- 域名解析已生效（`dig dartvio.win` → 43.156.5.140）；
+- anonKey **仍未配置**，所以 `isConfigured == false`，大厅如实显示「联机后端未配置」。
+
+### 20.7 ⚠️ 后端探测结论（本机 2026-09-29）
+
+| 探测 | 结果 | 说明 |
+| --- | --- | --- |
+| `dig dartvio.win` | `43.156.5.140` | 解析正常 |
+| `https://dartvio.win/` | 超时（无响应） | 443 上没有可用的 TLS 服务 |
+| `http://43.156.5.140/` | 超时 | 80 未通 |
+| `http://43.156.5.140:3000/` | 超时 | PostgREST 未监听 / 端口未放行 |
+| `https://43.156.5.140/` | TLS 握手被拒 `tlsv1 alert internal error` | 443 上有进程但没配好证书或要 SNI |
+
+⇒ **后端（Postgres + PostgREST + Realtime）还没在这台机器上跑起来**（或端口未放行）。
+这是服务端的事，改 App 代码解决不了。需要 WCB / 运维在服务器上：
+
+1. 起 Postgres + PostgREST(3000) + Supabase Realtime(4000)；
+2. 建三张表 `dartvio_rooms` / `dartvio_room_events`（含 `unique(room_id, seq)`）/ `dartvio_room_state`；
+3. 反代：`https://dartvio.win/` → 3000，`wss://dartvio.win/socket` → 4000；
+4. 放行 443，签 dartvio.win 证书；
+5. 把 anonKey 发给两端填入（**密钥不进包、不进仓库**）。
+
+### 20.8 测试随结构同步更新
+
+| 改动 | 原因 |
+| --- | --- |
+| 3 处去掉「先点『双人对抗训练』」 | 对抗模式现在在训练中心**一跳直达**，那一跳没了 |
+| V14 的 `2` + `0` 两键 → `20` 一键 | Cricket 换了自己的键盘，20 是一个键 |
+
+```
+Executed 16 tests, with 0 failures
+```

@@ -6,6 +6,7 @@ SUPABASE_ANON_KEY=<anon-key>
 # 可选：让 debug 包也上报（默认关，避免开发数据污染）
 dartvio.telemetry.debug=false
 
-# 在线对战后端（自建后端，蜂窝可达）。不单独配时回退到统计那套。
-ONLINE_URL=https://<your-online-backend>
+# 在线对战后端（自建后端，部署在腾讯云轻量 Ubuntu-X90X，IPv4 43.156.5.140，域名 dartvio.win）。
+# 不单独配时回退到统计那套。
+ONLINE_URL=https://dartvio.win
 ONLINE_ANON_KEY=<anon-key>
