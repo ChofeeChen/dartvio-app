@@ -1929,3 +1929,62 @@ Executed 16 tests, with 0 failures
 ```
 Executed 16 tests, with 0 failures
 ```
+
+## 21. 第 12 轮：账号入口与隐私合规（仅 Sign in with Apple + 游客）
+
+### 21.1 方案（用户 2026-09-29 拍定）
+
+| 决策 | 选择 | 理由 |
+| --- | --- | --- |
+| 登录方式 | **仅 Sign in with Apple + 游客** | 引第三方（微信/Google）就触发 Apple 4.8：必须并列提供 SIWA 且按钮显著；手机号要接短信+实名，易被认定超最小必要 |
+| 本轮范围 | **只做 iOS 前端** | 不等后端账号接口 |
+| 匿名统计 | **迁移到自建境内后端** | 消除 PIPL 第 38 条的出境问题（Supabase 在境外） |
+
+### 21.2 新增文件
+
+| 文件 | 作用 |
+| --- | --- |
+| `Features/Settings/AccountStore.swift` | 账号层：Keychain 存 `credential.user` + 昵称；`KeychainStore` 极薄封装 |
+| `Features/Settings/SettingsView.swift` | 落地设置页（原来「设置」卡指向 `PlaceholderView`）：账号 / 隐私 / 关于 |
+| `Features/Settings/PrivacyPolicyView.swift` | 隐私政策九节，按 PIPL 第 17 条组织 |
+| `PrivacyInfo.xcprivacy` | 隐私清单 |
+| `DartVio.entitlements` | `com.apple.developer.applesignin`，工程已设 `CODE_SIGN_ENTITLEMENTS` |
+
+### 21.3 合规要点落在代码里的位置
+
+- **最小必要**：`configure(_:)` 只请求 `.fullName`，**不申请邮箱与手机号**（用不到的字段不索要，隐私标签也少一项）。
+- **官方按钮**：用 `SignInWithAppleButton` 系统控件 + `.white` 样式，不自己画（4.8 要求官方样式与最小尺寸）。
+- **登出 vs 删除是两件事**：`signOut()` 只清本机凭证；`deleteAccount()` 清账号 + 联机 UUID + 昵称。
+  Apple 5.1.1(v) 与国内"便捷注销"都要求**在 App 内**提供删除账号，只给退出登录不合格。
+- **授权撤销要能感知**：`refreshCredentialState()` 在 `onAppear` 与冷启动时校验 `getCredentialState`，
+  `revoked / notFound / transferred` 一律退出登录（否则本机长期留一个已失效的账号标识）。
+- **游客态不受限**：未登录可用全部功能，登录只换"跨设备同步 + 昵称/战绩"（对应"不得因拒绝而无法使用基本功能"）。
+- **存储位置**：联机数据只写境内自建服务；统计**默认关闭**（`@AppStorage` 默认 `false`）。
+
+### 21.4 `PrivacyInfo.xcprivacy` 声明
+
+- `NSPrivacyTracking = false`，无追踪域名（不接 IDFA / 广告归因 SDK，因此不需要弹 ATT）
+- `NSPrivacyAccessedAPITypes`：`NSPrivacyAccessedAPITypeUserDefaults`（原因 `CA92.1`）—— 联机配置、设置项都在用
+- 收集类型：`UserID`、`Name`（昵称）、`ProductInteraction`、`OtherUserContent`（联机对局内容），
+  均为 `linked=true / tracking=false / purposes=AppFunctionality`（统计那项额外含 Analytics）
+
+### 21.5 ⚠️ 待业务确认的三项（不要凭空填）
+
+1. **隐私政策联系邮箱**：现为占位 `privacy@dartvio.win`
+2. **服务端数据保留期限**：现写"你删除或停止使用后清除"，等后端定
+3. **ICP 备案号**：设置页"关于"里显示"待填写"。`dartvio.win` 指向境内服务器，
+   中国区上架需要在 App Store Connect 填备案号 —— **建议尽快确认备案状态**
+
+### 21.6 待办（不在本轮范围）
+
+- 后端账号接口就绪后，`AccountStore.deleteAccount()` 要补「调用后端删除」（代码里已留 TODO）
+- 匿名统计迁移到自建后端：iOS 侧开关已就位（默认关），上报实现等服务端统计接口
+- 真机验证 SIWA：模拟器上点按钮会走真实授权流程并失败，UI 测试只断言按钮存在（V17）
+
+### 21.7 测试
+
+新增 `testV17SettingsAndPrivacy`（游客态文案 + 官方按钮存在 + 隐私政策可达且写明存储地点）：
+
+```
+Executed 17 tests, with 0 failures
+```

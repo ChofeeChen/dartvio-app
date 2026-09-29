@@ -48,13 +48,8 @@ struct HomeView: View {
                         )
                     } label: { entryCard(entry: .stats) }
                     .accessibilityIdentifier("entryStats")
-                    NavigationLink {
-                        PlaceholderView(
-                            title: "设置",
-                            subtitle: "外观 / 单位 / 通知 等通用设置待接入；各玩法的对局参数在**各自的设置页**里，不在这里"
-                        )
-                    } label: { entryCard(entry: .settings) }
-                    .accessibilityIdentifier("entrySettings")
+                    NavigationLink { SettingsView() } label: { entryCard(entry: .settings) }
+                        .accessibilityIdentifier("entrySettings")
                 }
             }
             .padding()

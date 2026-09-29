@@ -499,6 +499,44 @@ final class DartVioUITests: XCTestCase {
         )
     }
 
+    /**
+     * V17 设置页与隐私合规入口。
+     *
+     * 钉住三件事：
+     * 1. 「设置」不再是占位页（原来指向 `PlaceholderView`）；
+     * 2. **未登录也能用** —— 游客态文案在场，且游客态**没有**「删除账号」按钮（没账号可删）；
+     * 3. 隐私政策可达，且写明了存储地点（PIPL 要求的告知项之一）。
+     *
+     * ⚠️ 不点 Sign in with Apple：模拟器上点它会走真实授权流程并失败，
+     * 这里只断言官方按钮存在（官方按钮是 4.8 的硬要求，不能被自绘按钮替掉）。
+     */
+    func testV17SettingsAndPrivacy() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["entrySettings"].tap()
+        XCTAssertTrue(app.navigationBars.staticTexts["设置"].waitForExistence(timeout: 5))
+
+        let guestLabel = app.staticTexts["accountStateLabel"]
+        if !guestLabel.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V17-settings") }
+        XCTAssertTrue(
+            guestLabel.label.contains("游客模式"),
+            "未登录时必须是游客态且不限制功能，实际：\(guestLabel.label)"
+        )
+        XCTAssertFalse(app.buttons["deleteAccount"].exists, "游客态没有账号可删，不该显示删除账号")
+
+        let siwa = app.descendants(matching: .any).matching(identifier: "signInWithApple").firstMatch
+        if !siwa.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V17-siwa") }
+        XCTAssertTrue(siwa.exists, "必须提供官方 Sign in with Apple 按钮（4.8 要求官方样式）")
+
+        app.buttons["privacyPolicy"].tap()
+        XCTAssertTrue(app.navigationBars.staticTexts["隐私政策"].waitForExistence(timeout: 5))
+        let storage = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "存储地点")
+        ).firstMatch
+        XCTAssertTrue(storage.waitForExistence(timeout: 5), "隐私政策必须写明存储地点与期限")
+    }
+
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
     private let viewModelMinDarts = 30
 
