@@ -479,6 +479,30 @@ final class DartVioUITests: XCTestCase {
         XCTAssertLessThan(after, before, "切成真人后该席位不再显示 PPR 档（前 \(before) → 后 \(after)）")
     }
 
+    /**
+     * 比赛大厅入口（P0）：
+     *
+     * 钉的是两件容易被"看起来做好了"骗过去的事 ——
+     * 1. 大厅必须真的存在且从首页可达；
+     * 2. **未配置联机后端时必须如实说明并给出配置入口**：iOS 没有能烧进包的后端默认值，
+     *    若只是列表空着，用户会以为是"没人建房"而不是"没接后端"。
+     */
+    func testV16LobbyEntry() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["entryLobby"].tap()
+        XCTAssertTrue(app.navigationBars.staticTexts["比赛大厅"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "仅 X01")).firstMatch.exists,
+            "大厅必须写明 P0 只支持 X01"
+        )
+        XCTAssertTrue(app.buttons["lobbyConfig"].waitForExistence(timeout: 5), "未配置时要有配置入口")
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "联机后端未配置")).firstMatch.exists
+        )
+    }
+
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
     private let viewModelMinDarts = 30
 

@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE49000000000000000002 /* RoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE48000000000000000002 /* RoomView.swift */; };
+		1AE49000000000000000001 /* LobbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE48000000000000000001 /* LobbyView.swift */; };
+		1AE46000000000000000005 /* OnlineRoomRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000005 /* OnlineRoomRepository.swift */; };
+		1AE46000000000000000004 /* RoomEventStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000004 /* RoomEventStream.swift */; };
+		1AE46000000000000000003 /* OnlineRoomApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000003 /* OnlineRoomApi.swift */; };
+		1AE46000000000000000002 /* RoomWire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000002 /* RoomWire.swift */; };
+		1AE46000000000000000001 /* OnlineConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000001 /* OnlineConfig.swift */; };
 		1AE442000000000000000000 /* OpponentSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE443000000000000000000 /* OpponentSetupView.swift */; };
 		1AE440000000000000000000 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE441000000000000000000 /* HomeView.swift */; };
 		1AE446111111111111111111 /* CricketSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE445111111111111111111 /* CricketSetupView.swift */; };
@@ -70,6 +77,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE48000000000000000002 /* RoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomView.swift; sourceTree = "<group>"; };
+		1AE48000000000000000001 /* LobbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyView.swift; sourceTree = "<group>"; };
+		1AE45000000000000000005 /* OnlineRoomRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineRoomRepository.swift; sourceTree = "<group>"; };
+		1AE45000000000000000004 /* RoomEventStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomEventStream.swift; sourceTree = "<group>"; };
+		1AE45000000000000000003 /* OnlineRoomApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineRoomApi.swift; sourceTree = "<group>"; };
+		1AE45000000000000000002 /* RoomWire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomWire.swift; sourceTree = "<group>"; };
+		1AE45000000000000000001 /* OnlineConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineConfig.swift; sourceTree = "<group>"; };
 		1AE443000000000000000000 /* OpponentSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentSetupView.swift; sourceTree = "<group>"; };
 		1AE441000000000000000000 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		1AE445111111111111111111 /* CricketSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketSetupView.swift; sourceTree = "<group>"; };
@@ -129,6 +143,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1AE470000000000000000000 /* Lobby */ = {
+			isa = PBXGroup;
+			children = (
+				1AE45000000000000000001 /* OnlineConfig.swift */,
+				1AE45000000000000000002 /* RoomWire.swift */,
+				1AE45000000000000000003 /* OnlineRoomApi.swift */,
+				1AE45000000000000000004 /* RoomEventStream.swift */,
+				1AE45000000000000000005 /* OnlineRoomRepository.swift */,
+				1AE48000000000000000001 /* LobbyView.swift */,
+				1AE48000000000000000002 /* RoomView.swift */,
+			);
+			path = Lobby;
+			sourceTree = "<group>";
+		};
+
 		30000000000000000000000E /* Versus */ = {
 			isa = PBXGroup;
 			children = (
@@ -186,6 +215,7 @@
 				300000000000000000000008 /* Game */,
 				300000000000000000000009 /* Practice */,
 				30000000000000000000000E /* Versus */,
+				1AE470000000000000000000 /* Lobby */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -389,6 +419,13 @@
 				200000000000000000000012 /* SharedAccess.swift in Sources */,
 				200000000000000000000013 /* SharedFactory.swift in Sources */,
 				200000000000000000000014 /* RootTabsView.swift in Sources */,
+				1AE49000000000000000002 /* RoomView.swift in Sources */,
+				1AE49000000000000000001 /* LobbyView.swift in Sources */,
+				1AE46000000000000000005 /* OnlineRoomRepository.swift in Sources */,
+				1AE46000000000000000004 /* RoomEventStream.swift in Sources */,
+				1AE46000000000000000003 /* OnlineRoomApi.swift in Sources */,
+				1AE46000000000000000002 /* RoomWire.swift in Sources */,
+				1AE46000000000000000001 /* OnlineConfig.swift in Sources */,
 				1AE442000000000000000000 /* OpponentSetupView.swift in Sources */,
 				1AE440000000000000000000 /* HomeView.swift in Sources */,
 				200000000000000000000015 /* X01SetupView.swift in Sources */,

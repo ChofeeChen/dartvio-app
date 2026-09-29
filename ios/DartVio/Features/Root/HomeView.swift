@@ -37,7 +37,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("entryCricket")
 
                     // 联机 / 训练 / 数据 / 设置
-                    NavigationLink { LobbyEntryView() } label: { entryCard(entry: .lobby) }
+                    NavigationLink { LobbyView() } label: { entryCard(entry: .lobby) }
                         .accessibilityIdentifier("entryLobby")
                     NavigationLink { TrainingCenterView() } label: { entryCard(entry: .training) }
                         .accessibilityIdentifier("entryTraining")
@@ -215,62 +215,5 @@ struct TrainingCenterView: View {
             Text(subtitle).font(.caption).foregroundStyle(Palette.textMuted)
         }
         .padding(.vertical, 4)
-    }
-}
-
-/**
- * 比赛大厅（P0：只列产品定义与当前可达范围）。
- *
- * ## 边界写死在这里是有原因的
- *
- * shared 的 `domain/room`（`RoomRules` / `RoomMatchRules` / `RoomEventReplay`）**已经在 commonMain**，
- * 且 `RoomMatchRules.supportsLiveMatch` 明说了：**权威联机对局只支持 X01**，房间是 1v1。
- * 这条不是 iOS 的取舍，是引擎边界 —— 所以 UI 必须按它写，不能给 Cricket 也挂个「联机」按钮。
- *
- * 还没到位的是 `net/online` 那一层（PostgREST + Realtime WebSocket），它只在 `android/app`，
- * 不在 shared（commonMain 要求零依赖）。iOS 要真联机得新写这一层，故此处如实标注。
- */
-struct LobbyEntryView: View {
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                infoCard(
-                    title: "P0 范围",
-                    lines: [
-                        "玩法：仅 X01（引擎的权威联机对局目前只支持 X01）",
-                        "人数：1v1 房间",
-                        "流程：建房 / 加入 → 等候 → 对局 → 结算 → 再来一局"
-                    ]
-                )
-                infoCard(
-                    title: "当前状态",
-                    lines: [
-                        "房间内核（事件流重放）已在 shared：RoomRules / RoomMatchRules / RoomEventReplay",
-                        "联机网络层（PostgREST + Realtime WebSocket）尚未下沉 shared，iOS 侧待接入",
-                        "在此之前可先玩本地对局：首页 → X01 / Cricket"
-                    ]
-                )
-            }
-            .padding()
-        }
-        .background(Palette.background)
-        .navigationTitle("比赛大厅")
-    }
-
-    private func infoCard(title: String, lines: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.headline).foregroundStyle(Palette.textPrimary)
-            ForEach(lines, id: \.self) { line in
-                Text("· \(line)")
-                    .font(.caption)
-                    .foregroundStyle(Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

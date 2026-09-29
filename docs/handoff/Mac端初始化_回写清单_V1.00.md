@@ -1772,3 +1772,71 @@ Executed 15 tests, with 0 failures
 ```
 
 编译 0 error / 0 warning。
+
+## 19. 第 10 轮：比赛大厅真联机（iOS 侧网络层）
+
+### 19.1 为什么必须自己写一层
+
+房间**内核**在 shared（`RoomRules` / `RoomMatchRules` / `RoomEventReplay`），两端共用；
+但**线格式**在 `android/app/net/online`（`RoomEventCodec` / `RoomStateCodec`），
+commonMain 要求零依赖放不进去。所以 iOS 新写了网络层，**协议逐字对齐 Android**：
+
+| 层 | iOS 文件 | 对齐 Android 的 |
+| --- | --- | --- |
+| 配置 | `Features/Lobby/OnlineConfig.swift` | `net/online/OnlineConfig.kt`（无 wsUrl，WebSocket 地址由 REST 改 scheme 推导） |
+| 编解码 | `Features/Lobby/RoomWire.swift` | `RoomEventCodec.kt` / `RoomStateCodec.kt` |
+| REST | `Features/Lobby/OnlineRoomApi.swift` | `OnlineRoomApi.kt`（PostgREST，三张 `dartvio_*` 表） |
+| WebSocket | `Features/Lobby/RoomEventStream.swift` | `RoomEventStream.kt`（Realtime / Phoenix 协议） |
+| 仓库 | `Features/Lobby/OnlineRoomRepository.swift` | `OnlineRoomRepository.kt` |
+| UI | `Features/Lobby/LobbyView.swift` / `RoomView.swift` | LobbyScreen / RoomWaitingScreen / RoomMatchScreen |
+
+### 19.2 协议要点（改之前先看 Android）
+
+- 三张表：`dartvio_rooms` / `dartvio_room_events` / `dartvio_room_state`；事件表有 `unique(room_id, seq)`；
+- 写操作带 `apikey` + `Authorization: Bearer …` + `Prefer: return=minimal`；
+- **409 = 冲突不是错误**：撞 `seq` 时拉全量换 `seq+1` 重投（最多 3 次）；
+- topic **不是** `room:<id>`，是 `realtime:public:dartvio_room_events`，房间号放在 join 的 `filter`（`room_id=eq.<id>`）；
+  自定义 broadcast topic 一律回 `unmatched topic`；
+- 心跳 25 秒、topic 为 `phoenix`；只认 `data.type == "INSERT"`；
+- **订阅不补发 join 之前的事件** → 先拉全量再订阅；且 Realtime 会「join 成功但一条不推」，故另有 3 秒轮询兜底；
+- 排序**只认 `seq`**（不用自增 id / created_at，两台手机时钟不要求一致）；
+- 线上 payload **没有 ppr**（`RoomCreated.creatorPpr` / `MemberJoined.ppr` 数据类里有，但 codec 不读写）——别照数据类编。
+
+### 19.3 房间状态与 P0 边界
+
+- `RoomStatus` 只有 `WAITING / PLAYING / ENDED`；`Room.MAX_MEMBERS = 2`（1v1）；
+- `RoomMatchRules.supportsLiveMatch` 只认 X01 ⇒ 大厅**不提供** Cricket 联机入口；
+- 只有房主能开局，门禁在重放层（非法事件被忽略，不写脏状态）；`RoomRules.startBlocker` 直接给中文阻塞原因。
+
+### 19.4 本轮踩到的导出坑
+
+1. `RoomVisibility` 的枚举项导出为 **`public_` / `private_`**（`public` 撞 Swift 关键字，KMP 加下划线），不是 `public` / `private`；
+2. `@Observable` 类的 `init` 里**回读自己的存储属性**会报「used before initialized」——先落局部常量再赋值；
+3. JSON 里要显式写 null 时用 `NSNull()`（`"ref": nil` 会触发 Any? 隐式装箱警告）。
+
+### 19.5 ⚠️ 与 WCB 相关的构建坑（重要）
+
+`ios/Scripts/link-shared.sh` 的判断是「framework **不存在**才跑 Gradle」。
+也就是说：**改了 Kotlin 之后，Xcode 编译不会自动重新编译它**，只会拷旧的 framework，且**编译还报绿**。
+必须手动二选一：
+
+```bash
+cd android && ./gradlew :shared:linkDebugFrameworkIosArm64 :shared:linkDebugFrameworkIosSimulatorArm64
+# 或删掉 android/shared/build/bin/ 让脚本兜底跑 Gradle
+```
+
+### 19.6 测试
+
+| 测试 | 钉住什么 |
+| --- | --- |
+| `testV16LobbyEntry` | 首页 → 比赛大厅可达；写明 P0 仅 X01；**未配置后端时给出配置入口**而不是空列表 |
+
+```
+Executed 16 tests, with 0 failures
+```
+
+### 19.7 待办
+
+- 真机 / 双端联调（需要先把自建后端跑起来，两端填同一 URL + anonKey）；
+- 观战页、邀请码、好友可见性（Android 有、iOS 未做）；
+- 大厅快照 `dartvio_room_state` 的写入（iOS 目前只读不写，列表靠 `dartvio_rooms`）。
