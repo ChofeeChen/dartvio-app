@@ -143,17 +143,30 @@ struct X01PlayerCard: View {
 struct TurnDartsRow: View {
     let darts: [Dart]
 
+    /**
+     * ⚠️ 一镖未投时**不摆三个空槽**：那是三块纯粹的空白（每回合开局都能看见），
+     * 而它要表达的信息「本回合 0 分 · 还能投 3 镖」一行文字就说完了。
+     * 槽位只在真的有镖时才占位 —— 空槽是"还没投"，空槽占三格是"白白吃掉 38pt"。
+     */
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<3, id: \.self) { index in
-                DartSlot(text: index < darts.count ? DartText.label(darts[index]) : "")
-            }
-            Spacer()
-            Text("本回合 \(DartText.total(darts))")
+        if darts.isEmpty {
+            Text("本回合 0 · 最多 3 镖")
                 .font(.subheadline)
-                .foregroundStyle(Palette.textSecondary)
+                .foregroundStyle(Palette.textMuted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+        } else {
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { index in
+                    DartSlot(text: index < darts.count ? DartText.label(darts[index]) : "")
+                }
+                Spacer()
+                Text("本回合 \(DartText.total(darts))")
+                    .font(.subheadline)
+                    .foregroundStyle(Palette.textSecondary)
+            }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }
 

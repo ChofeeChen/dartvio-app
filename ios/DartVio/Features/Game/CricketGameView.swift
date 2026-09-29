@@ -50,12 +50,21 @@ struct CricketGameView: View {
                 .padding(.bottom, 8)
             }
 
-            KeypadView(
+            // ⚠️ Cricket 必须用**自己的键盘**，不能用 X01 的 `KeypadView`：
+            // 那一套是「0–9 数字 buffer + 任意 1–20 扇区」，而 Cricket 只认本局的目标集
+            //（标准局 15–20 + Bull），复用会把一堆记不到凭证的键摆在键盘上（测试里发现的引用错误）。
+            CricketKeypadView(
+                targets: viewModel.targets,
+                canAddDart: !viewModel.isInputLocked && viewModel.turnDarts.count < 3,
+                // Cricket 一回合最多 3 镖、也可提前交出去，所以「结束回合」在任何镖数下都是同一个动作；
+                // 镖数由上面的 `TurnDartsRow` 与键盘上的倍率选中态表达，标题不跟着变（免得按钮文案跳来跳去）。
                 confirmTitle: "结束回合",
+                turnDartsCount: viewModel.turnDarts.count,
                 onDart: { viewModel.throwDart($0) },
                 onUndo: { viewModel.undoLastDart() },
                 onConfirm: { viewModel.finishTurn() }
             )
+            .padding(.horizontal)
         }
         .background(Palette.background)
         .navigationBarBackButtonHidden(true)

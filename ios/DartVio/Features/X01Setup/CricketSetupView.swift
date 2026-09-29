@@ -140,30 +140,45 @@ struct CricketSetupView: View {
                 .background(Palette.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                // ⚠️ 用的是**视图型** NavigationLink，不是 `NavigationLink(value:)`：
-                // 本页是被 X01 设置页用视图型链接 push 进来的，在这种「被 push 的页」里再注册
-                // `navigationDestination(for:)` 有时不生效 —— 实测点击"开始对局"原地不动
-                // （V14 就是这么挂的），而同一个 NavigationStack 上的视图型链接始终可用。
-                NavigationLink {
-                    CricketGameView(launch: currentLaunch)
-                } label: {
-                    Text("开始对局")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Palette.primary)
-                        .foregroundStyle(Palette.onPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .accessibilityIdentifier("cricketStart")
-                .padding(.top, 8)
             }
             .padding()
+        }
+        // 「开始对局」固定在屏幕底部（见 `startBar`）：设置项有多少，按钮都在同一个位置。
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                Divider()
+                startBar
+            }
+            .background(Palette.surface)
         }
         .background(Palette.background)
         .navigationTitle("Cricket")
         // ⚠️ 这里**不要**再注册 `navigationDestination(for:)`：开始对局已改为视图型链接，
         // 注册了也用不上；而且同类型重复注册会让「点下去去哪」依赖注册顺序（见回写清单 §16.4）。
+    }
+
+    /**
+     * 底部固定条里的「开始对局」。
+     *
+     * ⚠️ 用**视图型** `NavigationLink`，不是 `NavigationLink(value:)`：
+     * 这种「被 push 的页」里注册 `navigationDestination(for:)` 实测不生效
+     * （点下去原地不动 —— V14 就是这么挂的），而视图型链接始终可用。
+     */
+    private var startBar: some View {
+        NavigationLink {
+            CricketGameView(launch: currentLaunch)
+        } label: {
+            Text("开始对局")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Palette.primary)
+                .foregroundStyle(Palette.onPrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .accessibilityIdentifier("cricketStart")
     }
 
     private var currentLaunch: CricketLaunch {

@@ -281,7 +281,6 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         app.buttons["entryTraining"].tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Bull 之争")).firstMatch.tap()
         app.buttons["versusStart"].tap()
@@ -311,7 +310,6 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         app.buttons["entryTraining"].tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         // Bull 之争：扇区键与倍率键全关，只留牛眼与 MISS
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Bull 之争")).firstMatch.tap()
@@ -331,7 +329,6 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         app.buttons["entryTraining"].tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "环游三镖")).firstMatch.tap()
         app.buttons["versusStart"].tap()
@@ -417,8 +414,7 @@ final class DartVioUITests: XCTestCase {
 
         // T20：三倍 20 = 直接集满 3 个记号（Cricket 的"累计 3 次"口径）
         app.buttons["T"].tap()
-        app.buttons["2"].tap()
-        app.buttons["0"].tap()
+        app.buttons["20"].tap()
         app.buttons["结束回合"].tap()
 
         // 矩阵与分数都应在**回合结束后**立即可见

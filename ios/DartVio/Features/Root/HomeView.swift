@@ -110,8 +110,14 @@ struct HomeView: View {
         }
     }
 
+    /**
+     * 卡片内容**相对卡片居中**（图标 / 标题 / 副标题整体居中）。
+     *
+     * 之前是 `.leading`：六张卡宽度一致而文字长短不一，左对齐会让每张卡的"视觉重心"
+     * 落在不同位置，扫视时要逐张重新定位；居中后卡片本身成为一个稳定的视觉单元。
+     */
     private func entryCard(entry: Entry) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 6) {
             Image(systemName: entry.symbol)
                 .font(.title3)
                 .foregroundStyle(entry.isPrimary ? Palette.primary : Palette.textSecondary)
@@ -121,10 +127,11 @@ struct HomeView: View {
             Text(entry.subtitle)
                 .font(.caption2)
                 .foregroundStyle(Palette.textMuted)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .center)
         .padding(12)
         .background(Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -134,86 +141,5 @@ struct HomeView: View {
         )
         // 让整张卡都是点击热区（卡片内部是 VStack，不声明的话只有文字可点）。
         .contentShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-/**
- * 训练中心：三大本地模块（精准工坊 / 单人训练 / 双人对抗训练）。
- *
- * 分组不是为了好看：这三类**练的东西不同** —— 精准工坊练落点与稳定性、
- * 单人训练练结镖与分数推进、双人对抗练压力下的节奏。混在一张平铺列表里，
- * 玩家每次都要重新判断「这个模式练什么」。
- */
-struct TrainingCenterView: View {
-
-    /**
-     * ⚠️ 用 `ScrollView` 而不是 `List`：List 的屏幕外行**不会渲染**，
-     * XCUITest 就查不到（实测「双人对抗训练」在最后一屏外，V10 直接找不到按钮）。
-     * 内容一共 8 项，全部一次渲染没有性能代价。
-     */
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-            moduleSection("精准工坊", subtitle: "落点偏差 · 稳定性 · 专项处方") {
-                NavigationLink { ImpactSetupView() } label: { row("精准工坊", "手动点出落点，出偏差诊断与训练建议") }
-                    .accessibilityIdentifier("trainImpact")
-            }
-
-            moduleSection("单人训练", subtitle: "结镖与分数推进，一个人也能刷") {
-                NavigationLink { CountUpPracticeView() } label: { row("Count Up 练习", "8 轮 × 3 镖，累计总分") }
-                NavigationLink { RandomCheckoutPracticeView() } label: { row("随机结镖（路线学习）", "随机目标分，最多 3 镖双结") }
-                NavigationLink { CheckoutRushPracticeView() } label: { row("极速挑战", "限时连续结镖，含战报") }
-                NavigationLink { NinetyNineSetupView() } label: { row("99 Darts", "分区推进，先到 99 分") }
-                NavigationLink { CricketMprPracticeView() } label: { row("Cricket MPR 挑战", "限时刷 MPR") }
-                NavigationLink {
-                    X01GameView(launch: X01Launch(
-                        targetScore: 301,
-                        modeRaw: "casual",
-                        legsToWin: 1,
-                        outModeRaw: "doubleOut",
-                        inModeRaw: "straightIn",
-                        smartAi: true,
-                        difficultyRaw: "advanced",
-                        opponents: [OpponentSeat(isAi: true, difficultyRaw: "advanced")]
-                    ))
-                } label: { row("AI 对战练习", "与 AI 打一局 X01") }
-            }
-
-            moduleSection("双人对抗训练", subtitle: "同一台设备轮流投，或对抗小模式") {
-                NavigationLink { VersusListView() } label: { row("双人对抗训练", "Bull 之争等 6 个双人模式") }
-            }
-            }
-            .padding()
-        }
-        .background(Palette.background)
-        .navigationTitle("训练中心")
-    }
-
-    private func moduleSection<Content: View>(
-        _ title: String,
-        subtitle: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.semibold))
-                Text(subtitle).font(.caption2)
-            }
-            .foregroundStyle(Palette.textMuted)
-            VStack(spacing: 2) { content() }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(10)
-                .background(Palette.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func row(_ title: String, _ subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.headline).foregroundStyle(Palette.textPrimary)
-            Text(subtitle).font(.caption).foregroundStyle(Palette.textMuted)
-        }
-        .padding(.vertical, 4)
     }
 }

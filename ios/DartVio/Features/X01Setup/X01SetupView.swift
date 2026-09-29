@@ -158,29 +158,46 @@ struct X01SetupView: View {
                     .font(.caption2)
                     .foregroundStyle(Palette.textMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                // ⚠️ 同样的坑（见 CricketSetupView）：本页面现在是从首页 push 进来的，
-                // 「被 push 的页」里的 `NavigationLink(value:)` + `navigationDestination` 不生效，
-                // 点下去原地不动。改用视图型链接。
-                NavigationLink {
-                    X01GameView(launch: currentLaunch)
-                } label: {
-                    Text("开始对局")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Palette.primary)
-                        .foregroundStyle(Palette.onPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding(.top, 8)
             }
             .padding()
+        }
+        // 「开始对局」固定在屏幕底部（见 `startBar`）：设置项有多少，按钮都在同一个位置。
+        // `safeAreaInset` 而不是把它塞进滚动内容里 —— 塞进内容里，按钮会随设置项一起滑走。
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                Divider()
+                startBar
+            }
+            .background(Palette.surface)
         }
         .background(Palette.background)
         .navigationTitle("本地对局")
         // ⚠️ 不再注册 `navigationDestination(for: X01Launch.self)`：开始对局已改为视图型链接；
         // 保留注册会出现「注册了但没人用」，将来若有人再加同类型注册，命中谁取决于注册顺序。
+    }
+
+    /**
+     * 底部固定条里的「开始对局」。
+     *
+     * ⚠️ 用**视图型** `NavigationLink`：本页是从首页 push 进来的，
+     * 「被 push 的页」里的 `NavigationLink(value:)` + `navigationDestination` 实测不生效
+     * （点下去原地不动，V14 就是这么挂的）。
+     */
+    private var startBar: some View {
+        NavigationLink {
+            X01GameView(launch: currentLaunch)
+        } label: {
+            Text("开始对局")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Palette.primary)
+                .foregroundStyle(Palette.onPrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .accessibilityIdentifier("x01Start")
     }
 
     private var currentLaunch: X01Launch {

@@ -58,16 +58,22 @@ struct KeypadView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                Text(buffer.isEmpty ? "—" : "\(prefix)\(buffer)")
-                    .font(.system(size: 22, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Palette.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(legHint)
-                    .font(.caption)
-                    .foregroundStyle(Palette.textMuted)
+            /**
+             * 输入行**只在有内容时占位**：buffer 为空时这一行只有一个"——"，
+             * 是一整条 28pt 的空白。有内容才渲染，键盘区就不再有这块空地。
+             */
+            if !buffer.isEmpty || !legHint.isEmpty {
+                HStack(spacing: 12) {
+                    Text(buffer.isEmpty ? "—" : "\(prefix)\(buffer)")
+                        .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Palette.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(legHint)
+                        .font(.caption)
+                        .foregroundStyle(Palette.textMuted)
+                }
+                .frame(height: 28)
             }
-            .frame(height: 28)
 
             ForEach(rows.indices, id: \.self) { rowIndex in
                 HStack(spacing: 8) {
