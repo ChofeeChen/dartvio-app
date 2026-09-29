@@ -2103,3 +2103,68 @@ V17 改为断言「官方 SIWA 按钮」或「未启用说明」二者必有其�
 ```
 Executed 17 tests, with 0 failures
 ```
+
+## 22. 第 13 轮：服务器在新加坡（境外）+ 本地试玩链路
+
+### 22.1 关键更正（用户 2026-09-29）：服务器是**腾讯云新加坡**节点，用于开发与测试，不是境内
+
+这一条把上一轮几处结论反过来了，已全部改掉：
+
+| 上一轮（错） | 本轮（对） |
+| --- | --- |
+| 联机数据存境内，无出境问题 | 联机 = **出境**，需要 PIPL 第 39 条**单独同意** |
+| 匿名统计"迁自建境内后端以消除出境" | 迁到这台机器**仍然是出境**，迁移理由只剩"统一后端"，不是"合规" |
+| ICP 备案必填 | 境外节点**不适用**备案（正式版迁回境内才需要） |
+
+落地：`DataRegion`（Info.plist 配置 `DataRegion` / `DataRegionPlace` / `IcpFiling`）是区域的**唯一来源**，
+界面与隐私政策都不写死"境内/境外"：
+
+- `DataTransferConsent.isRequired = DataRegion.current.isOverseas` → 境外才拦同意卡，境内不拦
+  （对没有出境的场景索要"出境同意"本身就是告知错误）；
+- 大厅 `LobbyView`：**同意之前一个请求都不发**（拉房间列表本身就要把请求发到境外），同意卡列明
+  接收方 / 所在地 / 目的 / 信息种类 / 撤回方式；
+- 设置页「关于 → 服务提供地」显示 `新加坡（境外）`，「ICP 备案」显示"不适用（服务器在境外）"；
+- 隐私政策第四节标题随区域切换（境外版含"出境"与单独同意段落）。
+
+### 22.2 本地试玩：让联机链路在没有服务器时也能被执行
+
+后端还没起服务，只有 `OnlineRoomRepository` 的话，「建房 → 开局 → 投镖 → 结算」这条链**一次都跑不到** ——
+代码写完但没有一条路径能证明它是对的。
+
+| 文件 | 作用 |
+| --- | --- |
+| `Features/Lobby/RoomRepository.swift` | `RoomRepositoryProtocol`：真联机与本地试玩共用一套能力，UI 不区分两者 |
+| `Features/Lobby/LocalRoomRepository.swift` | Android `LocalRoomRepository` 的对等物：事件在**本机造**，其余与联机**同源** |
+
+同源的部分（刻意保持一致）：状态仍然来自 `RoomEventReplay` 重放；事件仍然带 `seq` 按序追加；
+对手的回合也写成一条 `turn_submitted` 事件（不是偷偷改分数）；对手由 `X01Ai` 代打。
+只允许这几处不同：没有 409 重试与轮询兜底，没有网络。
+
+- `RoomView` 改为**注入**仓库（`init(repository:roomId:)`），不再写死 `OnlineRoomRepository`；
+  状态栏先看 `isLocal` —— 本地试玩没有连接过程，`status` 恒为 `.live`，
+  不判 `isLocal` 就会在没连任何服务器时写着"已连接（实时同步）"。
+- 大厅新增「本地试玩（不联网）」入口（`lobbyLocalPlay`）：建房后自动补一个对手，走 sheet 进房间页。
+
+### 22.3 踩到并修掉的两个坑
+
+1. **`KotlinRandom.companion.default` 会崩**：`kotlin.random.Random` 是抽象类，
+   必须走 `SharedAccess.newRandom()`（`KotlinRandom.Default.shared`）—— V4 测试崩过一次，别再写错。
+2. **容器 identifier 吃掉子按钮 identifier**：`waitingSection` / `matchSection` 只写 `.accessibilityIdentifier`
+   时，identifier 会落到子按钮上（"准备 / 开始对局 / 离开房间"三个按钮全变成 `roomWaiting`），
+   `roomReady` / `roomStart` 查不到。必须 `.accessibilityElement(children: .contain)` —— 与 `cricketScores` 同源。
+
+### 22.4 引擎侧确认（不是猜的）
+
+- `RoomEventReplay.startMatch`：只认**房主**的 `match_started`，且要求房间仍是 WAITING，
+  之后 `RoomRules.started` 把状态推到 PLAYING 并 `RoomMatchRules.start` 起权威对局；
+- 房主建房即视为已准备（`creator.isReady = true`），所以本地房间一进来就能开局 ——
+  测试里**不能**先点「准备」，点了反而取消准备、开局按钮消失。
+
+### 22.5 测试
+
+新增 `testV18LocalPlay`：大厅 → 本地试玩 → 状态栏写"不联网" → 成员 2/2 → 开始对局 → 对局区 →
+键盘 2·0 → 提交回合 → 剩余必须是 **481**（分数由事件重放出来，不是本机自己算的）。
+
+```
+Executed 18 tests, with 0 failures
+```

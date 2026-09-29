@@ -20,7 +20,7 @@ import shared
  */
 @MainActor
 @Observable
-final class OnlineRoomRepository {
+final class OnlineRoomRepository: RoomRepositoryProtocol {
 
     // MARK: 对外状态
 
@@ -30,6 +30,7 @@ final class OnlineRoomRepository {
     var errorMessage: String?
     var roomId: String = ""
     var isBusy = false
+    var isLocal: Bool { false }
 
     /// 本机身份：一个持久化的随机 id。⚠️ 不能叫 `local_me` 之类固定值 ——
     /// 两台手机各用固定值会撞成同一个成员（Android 用 `RoomIdentity` 做这层投影）。

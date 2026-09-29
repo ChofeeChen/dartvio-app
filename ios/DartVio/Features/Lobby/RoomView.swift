@@ -13,8 +13,26 @@ import shared
 struct RoomView: View {
 
     let roomId: String
+    let repository: any RoomRepositoryProtocol
 
-    @State private var repository = OnlineRoomRepository()
+    /**
+     * 联机房间：仓库由房间页自己建（大厅只给房间号）。
+     */
+    init(roomId: String) {
+        self.roomId = roomId
+        self.repository = OnlineRoomRepository()
+    }
+
+    /**
+     * 本地试玩 / 已装配好的仓库：由上游传入。
+     *
+     * 房间号同时要显式给 —— 仓库是 `@MainActor` 的，不能在 View 的 `init` 里读它的属性。
+     */
+    init(repository: any RoomRepositoryProtocol, roomId: String) {
+        self.repository = repository
+        self.roomId = roomId
+    }
+
     @State private var pendingDarts: [Dart] = []
     @State private var isSubmitting = false
     @State private var note: String?
@@ -70,6 +88,9 @@ struct RoomView: View {
     }
 
     private var statusText: String {
+        // 本地试玩没有连接过程，(`status` 恒为 `.live`)—— 所以先看 `isLocal`，
+        // 否则会在没连任何服务器的情况下写着"已连接（实时同步）"。
+        if repository.isLocal { return "本地试玩（不联网，对手由 AI 代打）" }
         switch repository.status {
         case .notConfigured: return "联机后端未配置"
         case .connecting: return "连接中…"
@@ -140,6 +161,9 @@ struct RoomView: View {
         .padding()
         .background(Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        // ⚠️ `.contain` 不能少：少了它容器不成节点，identifier 会落到子按钮上（"准备/开始对局/离开房间"
+        // 三个按钮全变成 `roomWaiting`），`roomReady` / `roomStart` 就查不到了。
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("roomWaiting")
     }
 
@@ -163,6 +187,8 @@ struct RoomView: View {
         .padding()
         .background(Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        // 同上：不声明成容器，子按钮（提交回合 / 再来一局）的 identifier 会被这个 identifier 顶掉。
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("roomMatch")
     }
 

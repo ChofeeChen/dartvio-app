@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE46000000000000000006 /* RoomRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000006 /* RoomRepository.swift */; };
+		1AE46000000000000000007 /* LocalRoomRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000007 /* LocalRoomRepository.swift */; };
 		1AE500000000000000000602 /* DataRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000502 /* DataRegion.swift */; };
 		1AE500000000000000000601 /* DataTransferConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000501 /* DataTransferConsent.swift */; };
 		1AE500000000000000000301 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000300 /* PrivacyInfo.xcprivacy */; };
@@ -85,6 +87,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE45000000000000000006 /* RoomRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomRepository.swift; sourceTree = "<group>"; };
+		1AE45000000000000000007 /* LocalRoomRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRoomRepository.swift; sourceTree = "<group>"; };
 		1AE500000000000000000502 /* DataRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRegion.swift; sourceTree = "<group>"; };
 		1AE500000000000000000501 /* DataTransferConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTransferConsent.swift; sourceTree = "<group>"; };
 		1AE500000000000000000400 /* DartVio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DartVio.entitlements; sourceTree = "<group>"; };
@@ -183,6 +187,8 @@
 				1AE45000000000000000005 /* OnlineRoomRepository.swift */,
 				1AE48000000000000000001 /* LobbyView.swift */,
 				1AE48000000000000000002 /* RoomView.swift */,
+				1AE45000000000000000006 /* RoomRepository.swift */,
+				1AE45000000000000000007 /* LocalRoomRepository.swift */,
 			);
 			path = Lobby;
 			sourceTree = "<group>";
@@ -463,6 +469,8 @@
 				1AE4B000000000000237282 /* CricketKeypadView.swift in Sources */,
 				1AE4B000000000000894431 /* TrainingCenterView.swift in Sources */,
 				1AE49000000000000000002 /* RoomView.swift in Sources */,
+				1AE46000000000000000006 /* RoomRepository.swift in Sources */,
+				1AE46000000000000000007 /* LocalRoomRepository.swift in Sources */,
 				1AE49000000000000000001 /* LobbyView.swift in Sources */,
 				1AE46000000000000000005 /* OnlineRoomRepository.swift in Sources */,
 				1AE46000000000000000004 /* RoomEventStream.swift in Sources */,

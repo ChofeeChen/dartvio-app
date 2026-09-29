@@ -554,6 +554,58 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(storage.waitForExistence(timeout: 5), "隐私政策必须写明存储地点与期限")
     }
 
+    /**
+     * V18 本地试玩：不联网走完「建房 → 准备 → 开局 → 投镖 → 计分」。
+     *
+     * 钉的是这条链**真的能被执行**：联机后端还没部署，如果只有 `OnlineRoomRepository`，
+     * 房间页的代码一次都跑不到，写完也只是"看起来对"。本地仓库让同一套 UI + 同一个房间内核
+     * （`RoomEventReplay`）在没有服务器时也能跑出真实结果 —— 所以这条测试同时是联机链路的证据。
+     *
+     * 另外钉住一点：本地试玩的状态栏必须写"不联网"，**不能**因为没有连接过程就写"已连接"。
+     */
+    func testV18LocalPlay() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["entryLobby"].tap()
+        XCTAssertTrue(app.navigationBars.staticTexts["比赛大厅"].waitForExistence(timeout: 5))
+
+        app.buttons["lobbyLocalPlay"].tap()
+        let localStatus = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "本地试玩")
+        ).firstMatch
+        if !localStatus.waitForExistence(timeout: 8) { dumpUI(on: app, tag: "V18-room") }
+        XCTAssertTrue(localStatus.exists, "本地试玩必须如实写不联网，不能假称已连接服务器")
+
+        let waiting = app.otherElements["roomWaiting"]
+        if !waiting.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V18-waiting") }
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "成员 2/2")).firstMatch.exists,
+            "本地建房要自动补一个对手，否则永远开不了局"
+        )
+
+        // 不点「准备」：引擎里房主建房即视为已准备（`creator.isReady = true`），
+        // 点了反而会取消准备、把「开始对局」按钮变没。
+        let start = app.buttons["roomStart"]
+        if !start.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V18-start") }
+        start.tap()
+
+        let match = app.otherElements["roomMatch"]
+        if !match.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V18-match") }
+        XCTAssertTrue(match.exists, "开局后必须进入对局区（房间状态由事件重放推进）")
+
+        // 单镖 20 分：键盘 2 → 0 → 确认（记为 S20），再点一次确认才真正提交回合。
+        app.buttons["2"].tap()
+        app.buttons["0"].tap()
+        app.buttons["提交回合"].tap()
+        app.buttons["提交回合"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["481"].waitForExistence(timeout: 8),
+            "501 投出 S20 后剩余必须是 481 —— 分数要由事件重放出来，不是本机自己算的"
+        )
+    }
+
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
     private let viewModelMinDarts = 30
 

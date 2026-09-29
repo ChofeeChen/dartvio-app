@@ -31,12 +31,16 @@ struct LobbyView: View {
     @State private var showJoin = false
     @State private var activeRoomId: String?
     @State private var showRoom = false
+    @State private var localRepository: LocalRoomRepository?
+    @State private var showLocalRoom = false
+    @State private var isStartingLocal = false
     private let api = OnlineRoomApi()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 scopeCard
+                localPlayCard
                 if !OnlineConfig.isConfigured {
                     notConfiguredCard
                 } else if DataTransferConsent.isRequired && !DataTransferConsent.isGranted {
@@ -61,6 +65,12 @@ struct LobbyView: View {
         .sheet(isPresented: $showRoom) {
             NavigationStack { RoomView(roomId: activeRoomId ?? "") }
         }
+        // 本地试玩同样用 sheet：它不在房间列表里，没有可点的行。
+        .sheet(isPresented: $showLocalRoom) {
+            if let repo = localRepository {
+                NavigationStack { RoomView(repository: repo, roomId: repo.roomId) }
+            }
+        }
     }
 
     // MARK: - 卡片
@@ -71,6 +81,43 @@ struct LobbyView: View {
             "人数：1v1 房间",
             "流程：建房 / 加入 → 等候 → 对局 → 结算 → 再来一局",
         ])
+    }
+
+    /**
+     * 本地试玩入口（不联网）。
+     *
+     * 联机后端还在境外节点上没起服务，只有 `OnlineRoomRepository` 的话，
+     * 「建房 → 开局 → 投镖 → 结算」这条链**一次都跑不到** —— 写完的代码没有一条路径能证明它对。
+     * 这条入口就是那条路径：事件在本机造，房间内核与事件重放与联机完全同源。
+     */
+    private var localPlayCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("本地试玩（不联网）")
+                .font(.headline)
+                .foregroundStyle(Palette.textPrimary)
+            Text("与联机跑同一份房间内核与同一套事件重放，只是事件在本机产生、对手由 AI 代打。"
+                 + "用于在联机后端就绪前走通整条对局流程。")
+                .font(.caption)
+                .foregroundStyle(Palette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                startLocalPlay()
+            } label: {
+                Text(isStartingLocal ? "创建中…" : "开始本地试玩")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Palette.onPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Palette.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .disabled(isStartingLocal)
+            .accessibilityIdentifier("lobbyLocalPlay")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func infoCard(title: String, lines: [String]) -> some View {
@@ -249,6 +296,26 @@ struct LobbyView: View {
     }
 
     // MARK: - 动作
+
+    /** 本地试玩：建房 → 自动补一个对手 → 进房间页（对手已准备，本机点「准备」后可开局）。 */
+    private func startLocalPlay() {
+        isStartingLocal = true
+        Task {
+            let repository = LocalRoomRepository()
+            let config = SharedFactory.x01Config(
+                targetScore: 501,
+                mode: MatchMode.casual,
+                legsToWin: 1,
+                outMode: OutMode.doubleOut,
+                inMode: InMode.straightIn,
+                smartAi: false
+            )
+            _ = await repository.createRoom(name: "本地试玩", config: config)
+            localRepository = repository
+            isStartingLocal = false
+            showLocalRoom = true
+        }
+    }
 
     private func reload() async {
         guard OnlineConfig.isConfigured, DataTransferConsent.isGranted else { return }
