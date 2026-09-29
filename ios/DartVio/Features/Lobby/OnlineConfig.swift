@@ -20,6 +20,10 @@ enum OnlineConfig {
      * 联机后端地址：腾讯云轻量服务器（**Ubuntu-X90X，IPv4 43.156.5.140**），域名 `dartvio.win`
      *（2026-09-29 实测 `dig dartvio.win` 已解析到 43.156.5.140）。
      *
+     * ⚠️ 这台机器在**新加坡**（境外，当前用于开发与测试），所以联机就是个人信息出境 ——
+     * 大厅在发第一个请求前必须拿到 `DataTransferConsent`（PIPL 第 39 条）。
+     * 正式版若迁回境内，要把 `DataTransferConsent`、隐私政策第四节、设置页"服务提供地"一起改。
+     *
      * 地址是公开的，可以当默认值；**密钥不行** —— anonKey 永远要另外配（App 内「配置」或 Info.plist），
      * 所以 `isConfigured` 仍然要求两项都有值，不会因为有默认地址就假装已配好。
      *

@@ -21,6 +21,8 @@ struct SettingsView: View {
     @State private var showDeleteConfirm = false
     /// 匿名使用统计：**默认关**。开启前必须有明确的用途与接收方，否则就是"先收集再想怎么用"。
     @AppStorage("settings.telemetryEnabled") private var telemetryEnabled = false
+    /// 出境单独同意：初值取当前状态，`onChange` 负责落库（撤回要立刻生效，不能等下次启动）。
+    @State private var crossBorderConsent = DataTransferConsent.isGranted
 
     var body: some View {
         ScrollView {
@@ -143,6 +145,24 @@ struct SettingsView: View {
 
             Divider().background(Palette.divider)
 
+            Toggle(isOn: $crossBorderConsent) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("向境外提供个人信息")
+                        .font(.subheadline)
+                        .foregroundStyle(Palette.textPrimary)
+                    Text("联机服务器在新加坡，开启后才会传输；关闭即撤回同意，且立即停止传输。")
+                        .font(.caption2)
+                        .foregroundStyle(Palette.textMuted)
+                }
+            }
+            .tint(Palette.primary)
+            .accessibilityIdentifier("crossBorderToggle")
+            .onChange(of: crossBorderConsent) { _, granted in
+                granted ? DataTransferConsent.grant() : DataTransferConsent.revoke()
+            }
+
+            Divider().background(Palette.divider)
+
             NavigationLink {
                 PrivacyPolicyView()
             } label: {
@@ -150,7 +170,7 @@ struct SettingsView: View {
             }
             .accessibilityIdentifier("privacyPolicy")
 
-            Text("对局数据只在你主动进入联机房间时上传；纯单机玩法不上传任何数据。")
+            Text("对局数据只在你主动联机时上传，且当前**出境**（服务器在新加坡）；纯单机玩法不上传任何数据。")
                 .font(.caption2)
                 .foregroundStyle(Palette.textMuted)
         }
@@ -177,21 +197,22 @@ struct SettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(Palette.textSecondary)
                 Spacer()
-                Text("中国境内（自建）")
+                // ⚠️ 服务器在境外（新加坡，腾讯云）—— 联机即出境，隐私政策与单独同意都按境外写。
+                // 正式版若迁回境内，这里、隐私政策第四节、`DataTransferConsent` 三处要一起改。
+                Text("新加坡（境外）")
                     .font(.subheadline)
-                    .foregroundStyle(Palette.textPrimary)
+                    .foregroundStyle(Palette.warning)
             }
+            .accessibilityIdentifier("serviceRegionRow")
 
             HStack {
-                Text("ICP 备案号")
+                Text("ICP 备案")
                     .font(.subheadline)
                     .foregroundStyle(Palette.textSecondary)
                 Spacer()
-                // ⚠️ 域名 dartvio.win 指向境内服务器，备案号待确认：中国区上架需要在
-                // App Store Connect 填备案号，否则会被卡审核。
-                Text("待填写")
+                Text("不适用（服务器在境外）")
                     .font(.subheadline)
-                    .foregroundStyle(Palette.warning)
+                    .foregroundStyle(Palette.textMuted)
             }
             .accessibilityIdentifier("icpRow")
         }

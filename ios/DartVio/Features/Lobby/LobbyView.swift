@@ -14,6 +14,12 @@ import shared
  *
  * 联机后端是自建的（Postgres + PostgREST + Supabase Realtime），没有默认值。
  * 与其让列表永远空着、看起来像"没人建房"，不如直接告诉用户缺什么。
+ *
+ * ## 联机 = 出境，所以前面还有一道同意
+ *
+ * 后端在**新加坡**（腾讯云境外节点），进联机就是把昵称与对局数据传到境外 ——
+ * 按《个人信息保护法》第 39 条这要**单独同意**，所以 `DataTransferConsent` 没同意时
+ * **一个请求都不发**（不是先拉列表再问，那样问之前就已经传了）。
  */
 struct LobbyView: View {
 
@@ -31,11 +37,14 @@ struct LobbyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 scopeCard
-                if OnlineConfig.isConfigured {
+                if !OnlineConfig.isConfigured {
+                    notConfiguredCard
+                } else if !DataTransferConsent.isGranted {
+                    // 同意之前不建房、不拉列表：拉取列表本身就要把请求发到境外服务器。
+                    consentCard
+                } else {
                     actionRow
                     roomList
-                } else {
-                    notConfiguredCard
                 }
             }
             .padding()
@@ -98,6 +107,45 @@ struct LobbyView: View {
                 .background(Palette.primary)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .accessibilityIdentifier("lobbyConfig")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// 出境单独同意卡（PIPL 第 39 条：接收方 / 目的 / 信息种类 / 撤回方式都要说清）。
+    private var consentCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("联机需要你的单独同意")
+                .font(.headline)
+                .foregroundStyle(Palette.textPrimary)
+            Text("联机服务器目前在 \(DataTransferConsent.region)，"
+                 + "使用联机即表示你的个人信息会被提供到境外。")
+                .font(.caption)
+                .foregroundStyle(Palette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            infoCard(title: "将提供到境外的内容", lines: [
+                "接收方：\(DataTransferConsent.recipient)",
+                "所在地：\(DataTransferConsent.region)",
+                "目的：\(DataTransferConsent.purposes)",
+                "信息种类：\(DataTransferConsent.categories)",
+                "撤回：设置 → 隐私 → 向境外提供个人信息，可随时关闭",
+            ])
+            Button("同意并继续") { DataTransferConsent.grant() }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Palette.onPrimary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Palette.primary)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .accessibilityIdentifier("lobbyConsentAgree")
+            NavigationLink { PrivacyPolicyView() } label: {
+                Text("查看隐私政策")
+                    .font(.caption)
+                    .foregroundStyle(Palette.primary)
+            }
+            .accessibilityIdentifier("lobbyConsentPolicy")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -203,7 +251,7 @@ struct LobbyView: View {
     // MARK: - 动作
 
     private func reload() async {
-        guard OnlineConfig.isConfigured else { return }
+        guard OnlineConfig.isConfigured, DataTransferConsent.isGranted else { return }
         isLoading = true
         defer { isLoading = false }
         rooms = await api.fetchRooms()

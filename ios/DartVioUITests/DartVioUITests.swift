@@ -529,6 +529,15 @@ final class DartVioUITests: XCTestCase {
         if !siwa.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V17-siwa") }
         XCTAssertTrue(siwa.exists, "必须提供官方 Sign in with Apple 按钮（4.8 要求官方样式）")
 
+        // 服务器在新加坡 → 联机即出境，单独同意必须默认关闭且可撤回（PIPL 第 39 条）。
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "新加坡")).firstMatch.exists,
+            "服务提供地必须如实标注新加坡（境外）"
+        )
+        let crossBorder = app.switches["crossBorderToggle"]
+        if !crossBorder.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V17-crossBorder") }
+        XCTAssertEqual(crossBorder.value as? String, "0", "出境单独同意必须默认关闭")
+
         app.buttons["privacyPolicy"].tap()
         XCTAssertTrue(app.navigationBars.staticTexts["隐私政策"].waitForExistence(timeout: 5))
         let storage = app.staticTexts.matching(
