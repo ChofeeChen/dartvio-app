@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE442000000000000000000 /* OpponentSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE443000000000000000000 /* OpponentSetupView.swift */; };
+		1AE440000000000000000000 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE441000000000000000000 /* HomeView.swift */; };
 		1AE446111111111111111111 /* CricketSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE445111111111111111111 /* CricketSetupView.swift */; };
 		1AE444111111111111111111 /* CricketGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE443111111111111111111 /* CricketGameView.swift */; };
 		1AE442111111111111111111 /* CricketGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE441111111111111111111 /* CricketGameViewModel.swift */; };
@@ -68,6 +70,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE443000000000000000000 /* OpponentSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentSetupView.swift; sourceTree = "<group>"; };
+		1AE441000000000000000000 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		1AE445111111111111111111 /* CricketSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketSetupView.swift; sourceTree = "<group>"; };
 		1AE443111111111111111111 /* CricketGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketGameView.swift; sourceTree = "<group>"; };
 		1AE441111111111111111111 /* CricketGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketGameViewModel.swift; sourceTree = "<group>"; };
@@ -190,6 +194,7 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000014 /* RootTabsView.swift */,
+				1AE441000000000000000000 /* HomeView.swift */,
 			);
 			path = Root;
 			sourceTree = "<group>";
@@ -198,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000015 /* X01SetupView.swift */,
+				1AE443000000000000000000 /* OpponentSetupView.swift */,
 							1AE445111111111111111111 /* CricketSetupView.swift */,
 );
 			path = X01Setup;
@@ -383,6 +389,8 @@
 				200000000000000000000012 /* SharedAccess.swift in Sources */,
 				200000000000000000000013 /* SharedFactory.swift in Sources */,
 				200000000000000000000014 /* RootTabsView.swift in Sources */,
+				1AE442000000000000000000 /* OpponentSetupView.swift in Sources */,
+				1AE440000000000000000000 /* HomeView.swift in Sources */,
 				200000000000000000000015 /* X01SetupView.swift in Sources */,
 				200000000000000000000016 /* X01GameViewModel.swift in Sources */,
 				200000000000000000000017 /* X01GameView.swift in Sources */,

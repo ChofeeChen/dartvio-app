@@ -12,6 +12,8 @@ struct CricketLaunch: Hashable {
     var variantRaw: String
     var legsToWin: Int32
     var difficultyRaw: String
+    /// 对手席位（逐席位可选是否 AI、AI 各自的 PPR 档）。
+    var opponents: [OpponentSeat] = [.ai("intermediate")]
 }
 
 enum CricketSetupMapping {
@@ -58,15 +60,7 @@ enum CricketSetupMapping {
     }
 
     static func players(from launch: CricketLaunch) -> [Player] {
-        [
-            SharedFactory.player(id: "p_human", name: "我", type: PlayerType.human),
-            SharedFactory.player(
-                id: "p_ai",
-                name: "电脑",
-                type: PlayerType.ai,
-                aiDifficulty: difficulty(launch.difficultyRaw)
-            ),
-        ]
+        OpponentPlayers.build(seats: launch.opponents)
     }
 
     /**
@@ -105,6 +99,7 @@ struct CricketSetupView: View {
     @State private var variantRaw = "standard"
     @State private var legsToWin: Int32 = 3
     @State private var difficultyRaw = "intermediate"
+    @State private var opponents: [OpponentSeat] = [.ai("intermediate")]
 
     var body: some View {
         ScrollView {
@@ -137,15 +132,13 @@ struct CricketSetupView: View {
                     Stepper(value: $legsToWin, in: 1...9) { Text("\(legsToWin) 局") }
                 }
 
-                SetupRow(title: "对手难度") {
-                    Picker("", selection: $difficultyRaw) {
-                        Text("入门").tag("beginner")
-                        Text("进阶").tag("intermediate")
-                        Text("高手").tag("advanced")
-                        Text("专业").tag("pro")
-                    }
-                    .pickerStyle(.menu)
-                }
+                OpponentSetupSection(
+                    seats: $opponents,
+                    hint: "最多 \(OpponentSeat.maxOpponents) 个对手；真人席位在同一台设备上轮流投镖，远程对战请走首页的比赛大厅。"
+                )
+                .padding()
+                .background(Palette.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 // ⚠️ 用的是**视图型** NavigationLink，不是 `NavigationLink(value:)`：
                 // 本页是被 X01 设置页用视图型链接 push 进来的，在这种「被 push 的页」里再注册
@@ -174,6 +167,11 @@ struct CricketSetupView: View {
     }
 
     private var currentLaunch: CricketLaunch {
-        CricketLaunch(variantRaw: variantRaw, legsToWin: legsToWin, difficultyRaw: difficultyRaw)
+        CricketLaunch(
+            variantRaw: variantRaw,
+            legsToWin: legsToWin,
+            difficultyRaw: difficultyRaw,
+            opponents: opponents
+        )
     }
 }

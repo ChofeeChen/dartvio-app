@@ -1723,3 +1723,52 @@ Executed 14 tests, with 0 failures
 ### 17.4 Cricket 剩余缺口（下一步）
 
 主链路（设置 → 对局 → AI → 多局胜负）已打通。剩余：变体不全（缺 Tactics / 随机目标）、Tactics 的 **claim 重判**（`CricketRules.redeclare` 引擎已有、iOS 未接）、对局不落库、无成就 / 统计 / 战报、设置不持久化。
+
+## 18. 第 9 轮：首页重构（移除底部 Tab）+ 对手选择 + 自适应 AI
+
+### 18.1 结构变更
+
+| 项 | 之前 | 现在 |
+| --- | --- | --- |
+| 导航壳 | `TabView`（对局 / 练习 / 我的） | 单条 `NavigationStack` + `HomeView`（Tab 已移除） |
+| X01 入口 | 首页就是 X01 设置页 | 首页 → `entryX01` → X01 设置页 |
+| Cricket 入口 | 嵌在 X01 设置页里的一张卡（`openCricket`） | 首页 → `entryCricket` → Cricket 设置页（与 X01 平级） |
+| 练习 | 一个平铺列表（8 项） | 首页 → 训练中心 → **三大模块**：精准工坊 / 单人训练 / 双人对抗训练 |
+| 新增入口 | — | 比赛大厅、统计数据、设置 |
+
+首页六个入口：`entryX01` / `entryCricket` / `entryLobby` / `entryTraining` / `entryStats` / `entrySettings`。
+
+### 18.2 对手选择（P0）
+
+- 上限 **3 个对手**（与 Android `MAX_OPPONENTS = MAX_PLAYERS - 1` 一致），第 1 席恒为本人；
+- **逐席位**选「AI 机器人 / 真人」，每个 AI **各自**一档 PPR —— Android 侧目前是整局二选一、AI 难度全局一档，做不到「两个机器人一强一弱」，本轮 iOS 先做到（双端口径待 WCB 对齐）；
+- AI 档位显示 **PPR（每轮平均分）区间**，取自引擎 `AiDifficulty.pprLow/pprMid/pprHigh`，iOS 不抄表；
+- 自适应：接引擎 `AdaptiveAiController`（`forMatch(config:difficulty:smartEnabled:)`），**每个 AI 席位一个控制器**，真人回合结算后 `recordHumanTurn(scored:darts:)`；引擎保证 clamp 在档位区间内、不跨档。
+
+⚠️ 顺带修掉一个既有 AI 缺陷：之前画像用 `AiProfile(ppr: seat.ppr)`，而 `seat.ppr` 是**机器人自己**的历史值，首回合 `dartsThrown == 0` ⇒ `ppr == 0` ⇒ `hitChanceFor(0) = 0` ⇒ **AI 第一回合必偏**。
+
+### 18.3 本轮踩到的三个坑（iOS 侧通用）
+
+1. **被 push 的页面里，`NavigationLink(value:)` + `navigationDestination` 不生效**（点击原地不动）。现在设置页都从首页 push 进来，于是 X01「开始对局」、Cricket「开始对局」、对抗「开局/查看战报」、99 Darts 选扇区全部改成**视图型** `NavigationLink`，并删掉随之失效的 `navigationDestination`（含 `VersusRoute` 枚举）；
+2. **`List` 的屏幕外行不渲染**，XCUITest 查不到（训练中心最后一项「双人对抗训练」）。训练中心改 `ScrollView` + `VStack`；
+3. **Stepper 的标签在 AX 树里是 Button**（"1 个对手（最多 3）, Decrement"），按 `staticTexts` 查不到；且提示文案也含"个对手"，断言要用 `BEGINSWITH`。
+
+### 18.4 比赛大厅（P0 边界）
+
+shared 的 `domain/room`（`RoomRules` / `RoomMatchRules` / `RoomEventReplay`）已在 commonMain，
+`RoomMatchRules.supportsLiveMatch` 明确**权威联机对局只支持 X01**、房间 1v1 —— 这是引擎边界不是 iOS 取舍。
+未到位的是 `net/online`（PostgREST + Realtime WebSocket），它只在 `android/app`（commonMain 要求零依赖）。
+故 `LobbyEntryView` 如实标注范围与状态，不做假联机。
+
+### 18.5 测试
+
+| 测试 | 钉住什么 |
+| --- | --- |
+| `testV15HomeAndOpponents` | 首页六个入口在 + **无底部 Tab**（`app.tabBars.count == 0`）+ 最多 3 对手 + AI 显示 PPR 档 + 切真人后 PPR 行消失 |
+| V2 / V3 两条 | 导航前缀改为「首页 → 入口」（设置页不再当首页） |
+
+```
+Executed 15 tests, with 0 failures
+```
+
+编译 0 error / 0 warning。

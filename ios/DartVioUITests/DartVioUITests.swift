@@ -17,26 +17,28 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // P2（对局 tab 根 = 设置页）
-        XCTAssertTrue(app.buttons["开始对局"].waitForExistence(timeout: 10))
+        // 首页：设置页不再当首页，先断言游戏入口在（具体入口清单由 V15 钉住）
+        XCTAssertTrue(app.buttons["entryX01"].waitForExistence(timeout: 10))
 
         // 练习 tab → P4 入口
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         let countUpEntry = app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@", "Count Up 练习")
         ).firstMatch
         XCTAssertTrue(countUpEntry.waitForExistence(timeout: 5))
 
-        // 我的 tab → 占位页（T3：Tab 可达、不崩、有「统计 / 成就 待接入」说明）
-        app.tabBars.buttons["我的"].tap()
-        XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 5))
+        // 返回首页 → 统计数据（T3：入口可达、不崩、有「统计 / 成就 待接入」说明）
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["entryStats"].tap()
+        XCTAssertTrue(app.staticTexts["统计数据"].waitForExistence(timeout: 5))
         let placeholder = app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS %@", "统计 / 成就 待接入")
         ).firstMatch
         XCTAssertTrue(placeholder.waitForExistence(timeout: 5))
 
-        // 对局 tab → 开始对局 → P3（键盘出现即视为到达）
-        app.tabBars.buttons["对局"].tap()
+        // 首页 → X01 设置 → 开始对局 → P3（键盘出现即视为到达）
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["entryX01"].tap()
         app.buttons["开始对局"].tap()
         XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
         app.buttons["退出"].tap()
@@ -48,6 +50,7 @@ final class DartVioUITests: XCTestCase {
     func testV3X01GameFlow() throws {
         let app = XCUIApplication()
         app.launch()
+        app.buttons["entryX01"].tap()
         app.buttons["开始对局"].tap()
         XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
 
@@ -88,6 +91,7 @@ final class DartVioUITests: XCTestCase {
         app.launch()
 
         // 结束规则默认就是「双倍出」，这里只把目标分从 501 换成 301
+        app.buttons["entryX01"].tap()
         app.buttons["301"].tap()
         app.buttons["开始对局"].tap()
         XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
@@ -124,7 +128,7 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@", "Count Up 练习")
         ).firstMatch.tap()
@@ -177,7 +181,7 @@ final class DartVioUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@", "随机结镖")
         ).firstMatch.tap()
@@ -216,7 +220,7 @@ final class DartVioUITests: XCTestCase {
     func testV6CheckoutRush() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "极速挑战")).firstMatch.tap()
 
         XCTAssertTrue(app.buttons["MISS"].waitForExistence(timeout: 10))
@@ -233,7 +237,7 @@ final class DartVioUITests: XCTestCase {
     func testV7NinetyNine() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "99 Darts")).firstMatch.tap()
 
         app.buttons["nnSector20"].tap()
@@ -247,7 +251,7 @@ final class DartVioUITests: XCTestCase {
     func testV8CricketMpr() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cricket MPR")).firstMatch.tap()
 
         let mpr = app.staticTexts["mprValue"]
@@ -261,7 +265,7 @@ final class DartVioUITests: XCTestCase {
     func testV9Impact() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "精准工坊")).firstMatch.tap()
 
         app.buttons["impactStart"].tap()
@@ -276,7 +280,7 @@ final class DartVioUITests: XCTestCase {
     func testV10VersusBattle() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Bull 之争")).firstMatch.tap()
@@ -306,7 +310,7 @@ final class DartVioUITests: XCTestCase {
     func testV11VersusKeyboardFilter() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         // Bull 之争：扇区键与倍率键全关，只留牛眼与 MISS
@@ -326,7 +330,7 @@ final class DartVioUITests: XCTestCase {
     func testV12VersusClockKeyboardFilter() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "双人对抗训练")).firstMatch.tap()
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "环游三镖")).firstMatch.tap()
@@ -353,7 +357,7 @@ final class DartVioUITests: XCTestCase {
     func testV13ImpactReportHeatmap() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["练习"].tap()
+        app.buttons["entryTraining"].tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "精准工坊")).firstMatch.tap()
         app.buttons["impactStart"].tap()
 
@@ -401,8 +405,8 @@ final class DartVioUITests: XCTestCase {
     func testV14CricketGame() throws {
         let app = XCUIApplication()
         app.launch()
-        app.tabBars.buttons["对局"].tap()
-        app.buttons["openCricket"].tap()
+        // 首页 → Cricket 入口（Cricket 不再嵌在 X01 的设置页里）
+        app.buttons["entryCricket"].tap()
         app.buttons["cricketStart"].tap()
 
         let board = app.otherElements["cricketBoard"]
@@ -426,6 +430,53 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["20"].waitForExistence(timeout: 5), "20 分区应出现在板面上")
         _ = scoreLabel
         XCTAssertTrue(app.staticTexts["BULL"].waitForExistence(timeout: 5), "目标集应包含 Bull")
+    }
+
+    /**
+     * 首页与对手选择（P0）：
+     *
+     * 1. 六个主入口都在，且**没有底部 Tab** —— Tab 移除这件事不钉住的话，
+     *    下次有人"方便起见"加回来，设置页又会变成首页；
+     * 2. X01 设置页最多 3 个对手，AI 席位显示 PPR 能力档，切成真人后 PPR 行消失 ——
+     *    钉的是「逐席位」而不是「整局一个难度档」这个口径。
+     */
+    func testV15HomeAndOpponents() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        for identifier in ["entryX01", "entryCricket", "entryLobby", "entryTraining", "entryStats", "entrySettings"] {
+            XCTAssertTrue(app.buttons[identifier].waitForExistence(timeout: 5), "首页应有入口 \(identifier)")
+        }
+        XCTAssertEqual(app.tabBars.count, 0, "底部 Tab 已移除")
+
+        app.buttons["entryX01"].tap()
+        // ⚠️ 用 BEGINSWITH：段里的说明文案也含"个对手"（"最多 3 个对手；真人席位…"），
+        // CONTAINS 会先命中说明文案，断言就变成在验提示而不是验步进器。
+        // ⚠️ Stepper 的标签在 AX 树里是 **Button**（"1 个对手（最多 3）, Decrement"），
+        // 不是 staticText —— 按 staticTexts 查会查不到（V15 第一次就是这么挂的）。
+        let opponentsLabel = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "1 个对手")).firstMatch
+        if !opponentsLabel.waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V15-opponents") }
+        XCTAssertTrue(opponentsLabel.exists, "默认 1 个对手，现场见 DIAG V15-opponents")
+
+        let pprQuery = NSPredicate(format: "label CONTAINS %@", "PPR")
+        XCTAssertTrue(
+            app.staticTexts.matching(pprQuery).firstMatch.waitForExistence(timeout: 5),
+            "AI 席位应显示 PPR 能力档"
+        )
+        let stepper = app.steppers.firstMatch
+        stepper.buttons["Increment"].tap()
+        stepper.buttons["Increment"].tap()
+        XCTAssertTrue(
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "3 个对手")).firstMatch
+                .waitForExistence(timeout: 5),
+            "最多加到 3 个对手"
+        )
+
+        // ⚠️ 计数要在「加满 3 席」之后取：否则比的是席位数量变化，验不到 AI→真人 这件事。
+        let before = app.staticTexts.matching(pprQuery).count
+        app.buttons["真人"].firstMatch.tap()
+        let after = app.staticTexts.matching(pprQuery).count
+        XCTAssertLessThan(after, before, "切成真人后该席位不再显示 PPR 档（前 \(before) → 后 \(after)）")
     }
 
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。

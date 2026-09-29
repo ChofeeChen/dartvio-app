@@ -16,6 +16,8 @@ struct X01Launch: Hashable {
     var inModeRaw: String
     var smartAi: Bool
     var difficultyRaw: String
+    /// 对手席位（每个席位自带「是否 AI」与 AI 的 PPR 档）；空 = 老口径（1 个进阶机器人）。
+    var opponents: [OpponentSeat] = [.ai("intermediate")]
 }
 
 enum X01SetupMapping {
@@ -59,16 +61,24 @@ enum X01SetupMapping {
         )
     }
 
+    /**
+     * 名单：**第 1 席恒为本人**，其余按 `launch.opponents` 展开。
+     *
+     * `difficultyRaw` 只作为「没有席位信息时的兜底」（外部构造 launch 不传 opponents 的老调用方），
+     * 正式路径上每个 AI 用它自己的档位 —— 这样才做得到「两个机器人一强一弱」。
+     */
     static func players(from launch: X01Launch) -> [Player] {
-        [
-            SharedFactory.player(id: "p_human", name: "我", type: PlayerType.human),
-            SharedFactory.player(
-                id: "p_ai",
-                name: "电脑",
-                type: PlayerType.ai,
-                aiDifficulty: difficulty(launch.difficultyRaw)
-            ),
-        ]
+        OpponentPlayers.build(seats: launch.opponents)
+    }
+
+    /// AI 档位名（"入门"…），取自引擎 `AiDifficulty` 的展示口径。
+    static func aiLevelTitle(_ raw: String) -> String {
+        switch raw {
+        case "beginner": return "入门"
+        case "advanced": return "高手"
+        case "pro": return "专业"
+        default: return "进阶"
+        }
     }
 }
 
@@ -81,34 +91,13 @@ struct X01SetupView: View {
     @State private var inModeRaw = "straightIn"
     @State private var smartAi = true
     @State private var difficultyRaw = "intermediate"
+    @State private var opponents: [OpponentSeat] = [.ai("intermediate")]
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                NavigationLink {
-                    CricketSetupView()
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Cricket 正式对局")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Palette.textPrimary)
-                            Text("关闭 15-20 与 Bull，还有 3 种玩法变体")
-                                .font(.caption)
-                                .foregroundStyle(Palette.textMuted)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(Palette.textMuted)
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                    .background(Palette.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .accessibilityIdentifier("openCricket")
-
+                // ⚠️ Cricket 的入口卡已从本页移除：它是**另一个游戏**，不该藏在 X01 的设置里。
+                // 现在两个玩法在首页平级各自入口（见 HomeView）。
                 SetupRow(title: "目标分") {
                     Picker("", selection: $targetScore) {
                         Text("301").tag(Int32(301))
@@ -154,21 +143,28 @@ struct X01SetupView: View {
                     .pickerStyle(.menu)
                 }
 
-                SetupRow(title: "对手难度") {
-                    Picker("", selection: $difficultyRaw) {
-                        Text("入门").tag("beginner")
-                        Text("进阶").tag("intermediate")
-                        Text("高手").tag("advanced")
-                        Text("专业").tag("pro")
-                    }
-                    .pickerStyle(.menu)
-                }
+                OpponentSetupSection(
+                    seats: $opponents,
+                    hint: "最多 \(OpponentSeat.maxOpponents) 个对手；真人席位在同一台设备上轮流投镖，远程对战请走首页的比赛大厅。"
+                )
+                .padding()
+                .background(Palette.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 SetupRow(title: "智能难度") {
                     Toggle("", isOn: $smartAi)
                 }
+                Text("开启后机器人会按你最近几轮的表现微调自己的 PPR（不会跨出所选档位的区间）。")
+                    .font(.caption2)
+                    .foregroundStyle(Palette.textMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                NavigationLink(value: currentLaunch) {
+                // ⚠️ 同样的坑（见 CricketSetupView）：本页面现在是从首页 push 进来的，
+                // 「被 push 的页」里的 `NavigationLink(value:)` + `navigationDestination` 不生效，
+                // 点下去原地不动。改用视图型链接。
+                NavigationLink {
+                    X01GameView(launch: currentLaunch)
+                } label: {
                     Text("开始对局")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
@@ -183,9 +179,8 @@ struct X01SetupView: View {
         }
         .background(Palette.background)
         .navigationTitle("本地对局")
-        .navigationDestination(for: X01Launch.self) { launch in
-            X01GameView(launch: launch)
-        }
+        // ⚠️ 不再注册 `navigationDestination(for: X01Launch.self)`：开始对局已改为视图型链接；
+        // 保留注册会出现「注册了但没人用」，将来若有人再加同类型注册，命中谁取决于注册顺序。
     }
 
     private var currentLaunch: X01Launch {
@@ -196,7 +191,8 @@ struct X01SetupView: View {
             outModeRaw: outModeRaw,
             inModeRaw: inModeRaw,
             smartAi: smartAi,
-            difficultyRaw: difficultyRaw
+            difficultyRaw: difficultyRaw,
+            opponents: opponents
         )
     }
 }

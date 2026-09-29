@@ -9,18 +9,6 @@ import shared
  * 见 `VersusViewModel` 的注释）。
  */
 
-/**
- * 对抗流程的两级路由（配置 → 对局 → 战报）。
- *
- * ⚠️ 别拿 `Bool` 当路由值：配置页与对局页都要往下一级推，两个
- * `navigationDestination(for: Bool.self)` 落在同一个 NavigationStack 里时，
- * 「下一级是谁」取决于注册顺序 —— 顺序一变就串页，而且编译器一声不吭。
- */
-private enum VersusRoute: Hashable {
-    case battle
-    case report
-}
-
 // MARK: - 模式列表
 
 struct VersusListView: View {
@@ -33,9 +21,7 @@ struct VersusListView: View {
             ForEach(modes.indices, id: \.self) { index in
                 let mode = modes[index]
                 if mode.available {
-                    NavigationLink(value: mode.modeKey) {
-                        card(mode)
-                    }
+                    NavigationLink { VersusSetupView(modeKey: mode.modeKey) } label: { card(mode) }
                 } else {
                     card(mode).opacity(0.45).allowsHitTesting(false)
                 }
@@ -45,9 +31,8 @@ struct VersusListView: View {
         .scrollContentBackground(.hidden)
         .background(Palette.background)
         .navigationTitle("双人对抗训练")
-        .navigationDestination(for: String.self) { modeKey in
-            VersusSetupView(modeKey: modeKey)
-        }
+        // ⚠️ 不用 `NavigationLink(value:)` + `navigationDestination`：本页从首页经训练中心 push 进来，
+        // 「被 push 的页」里注册的值型路由实测不生效（点下去原地不动），统一用视图型链接。
     }
 
     private func card(_ mode: VersusModeInfo) -> some View {
@@ -146,7 +131,9 @@ struct VersusSetupView: View {
                 }
             }
             Section {
-                NavigationLink(value: VersusRoute.battle) {
+                NavigationLink {
+                    battleView
+                } label: {
                     Text("开局")
                         .font(.headline)
                         .foregroundStyle(Palette.primary)
@@ -157,21 +144,24 @@ struct VersusSetupView: View {
         .scrollContentBackground(.hidden)
         .background(Palette.background)
         .navigationTitle(info?.title ?? "双人对抗")
-        .navigationDestination(for: VersusRoute.self) { route in
-            if case .battle = route, let rule {
-                let config = SharedFactory.versusConfig(
+    }
+
+    /** 开局的目标页（视图型链接要一个具体 View，所以把旧 destination 的构造挪到这里）。 */
+    @ViewBuilder
+    private var battleView: some View {
+        if let rule {
+            let config = SharedFactory.versusConfig(
+                modeKey: modeKey,
+                base: rule.defaultConfig(),
+                targetScore: effectiveTargetScore
+            )
+            VersusBattleView(
+                viewModel: VersusViewModel(
                     modeKey: modeKey,
-                    base: rule.defaultConfig(),
-                    targetScore: effectiveTargetScore
+                    playerNames: [playerA, playerB],
+                    config: config
                 )
-                VersusBattleView(
-                    viewModel: VersusViewModel(
-                        modeKey: modeKey,
-                        playerNames: [playerA, playerB],
-                        config: config
-                    )
-                )
-            }
+            )
         }
     }
 }
@@ -242,7 +232,9 @@ struct VersusBattleView: View {
                     }
 
                     if viewModel.state.finished {
-                        NavigationLink(value: VersusRoute.report) {
+                        NavigationLink {
+                            VersusReportView(viewModel: viewModel)
+                        } label: {
                             Text("查看战报")
                                 .font(.headline)
                                 .foregroundStyle(Palette.primary)
@@ -271,9 +263,6 @@ struct VersusBattleView: View {
                     .disabled(viewModel.state.finished)
                     .accessibilityIdentifier("versusAbort")
             }
-        }
-        .navigationDestination(for: VersusRoute.self) { route in
-            if case .report = route { VersusReportView(viewModel: viewModel) }
         }
     }
 }

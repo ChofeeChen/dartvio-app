@@ -37,6 +37,17 @@ final class X01GameViewModel {
     private let random = SharedAccess.newRandom()
     private var aiTask: Task<Void, Never>?
     private var aiDifficultyById: [String: AiDifficulty] = [:]
+    /**
+     * 每个**机器人席位**一个自适应控制器（key = playerId）。
+     *
+     * ⚠️ 之前这里没有控制器，画像直接由 `AiProfile(ppr: seat.ppr)` 现算 ——
+     * 而 `seat.ppr` 是**机器人自己**的历史 PPR，首回合 `dartsThrown == 0` ⇒ `ppr == 0` ⇒
+     * `hitChanceFor(0) = 0` ⇒ 机器人第一回合必偏，之后也在「自己的实际表现」和档位中值之间乱跳，
+     * 完全没有自适应。现在改成引擎的 `AdaptiveAiController`：
+     * 起算点是档位中值，真人每回合结算后喂 `recordHumanTurn`，机器人跟着真人的手感微调
+     * （且始终 clamp 在档位区间内，不会跨档）。
+     */
+    private var aiControllers: [String: AdaptiveAiController] = [:]
 
     init(config: MatchConfig, players: [Player]) {
         self.config = config
@@ -45,7 +56,13 @@ final class X01GameViewModel {
         // @Observable 展开后，通过下标修改 self 上的属性算「使用 self」，
         // 必须等所有存储属性（含 leg）初始化完再做，否则报 used before being initialized
         for player in players {
-            if let difficulty = player.aiDifficulty { aiDifficultyById[player.id] = difficulty }
+            guard let difficulty = player.aiDifficulty else { continue }
+            aiDifficultyById[player.id] = difficulty
+            aiControllers[player.id] = AdaptiveAiController.companion.forMatch(
+                config: config,
+                difficulty: difficulty,
+                smartEnabled: config.smartAi
+            )
         }
         scheduleAiTurnIfNeeded()
     }
@@ -149,6 +166,13 @@ final class X01GameViewModel {
 
     private func handleOutcome(_ outcome: TurnOutcome, fromAI: Bool) {
         message = outcome.message
+        // 自适应只学**真人**：把机器人自己的回合喂回去会变成正反馈（它越准就越准）。
+        if !fromAI, players.first(where: { $0.id == outcome.playerId })?.type == PlayerType.human {
+            let thrown = Int32(outcome.darts.count)
+            for controller in aiControllers.values {
+                controller.recordHumanTurn(scored: outcome.scored, darts: thrown)
+            }
+        }
         if outcome.won {
             handleLegWin(outcome)
             return
@@ -192,7 +216,9 @@ final class X01GameViewModel {
 
             let seat = leg.currentPlayer
             let difficulty = aiDifficultyById[seat.playerId] ?? .intermediate
-            let profile = SharedFactory.aiProfile(difficulty: difficulty, ppr: Double(seat.ppr))
+            // 画像取自控制器：它给出的 PPR 是「档位中值 + 跟着真人微调」，而不是机器人自己的历史值。
+            let profile = aiControllers[seat.playerId]?.profile()
+                ?? SharedFactory.aiProfile(difficulty: difficulty, ppr: Double(difficulty.ppr))
             let remaining = leg.currentRemaining
             let darts = SharedAccess.x01Ai.generateTurn(
                 remaining: remaining,

@@ -158,7 +158,9 @@ struct NinetyNineSetupView: View {
                 .foregroundStyle(Palette.textSecondary)
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(1...20, id: \.self) { sector in
-                    NavigationLink(value: sector) {
+                    NavigationLink {
+                        NinetyNinePracticeView(sector: Int32(sector))
+                    } label: {
                         Text("\(sector)")
                             .font(.headline)
                             .foregroundStyle(Palette.textPrimary)
@@ -175,8 +177,6 @@ struct NinetyNineSetupView: View {
         .padding()
         .background(Palette.background)
         .navigationTitle("99 Darts")
-        .navigationDestination(for: Int.self) { sector in
-            NinetyNinePracticeView(sector: Int32(sector))
-        }
+        // ⚠️ 同 Cricket / X01：本页现在是被 push 进来的，值型路由不生效，用视图型链接。
     }
 }

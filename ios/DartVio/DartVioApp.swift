@@ -4,7 +4,7 @@ import SwiftUI
 struct DartVioApp: App {
     var body: some Scene {
         WindowGroup {
-            RootTabsView()
+            RootView()
         }
     }
 }
