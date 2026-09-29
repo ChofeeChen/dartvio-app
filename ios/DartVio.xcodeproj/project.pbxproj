@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE460000000000000000700 /* GameCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000700 /* GameCatalog.swift */; };
+		1AE460000000000000000701 /* CreateMatchStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000701 /* CreateMatchStyle.swift */; };
+		1AE460000000000000000702 /* CreateMatchDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000702 /* CreateMatchDraft.swift */; };
+		1AE460000000000000000703 /* CreateMatchModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000703 /* CreateMatchModalView.swift */; };
+		1AE460000000000000000704 /* GameModeGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000704 /* GameModeGridView.swift */; };
+		1AE460000000000000000705 /* GameRulesPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000705 /* GameRulesPanelView.swift */; };
 		1AE46000000000000000006 /* RoomRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000006 /* RoomRepository.swift */; };
 		1AE46000000000000000007 /* LocalRoomRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45000000000000000007 /* LocalRoomRepository.swift */; };
 		1AE500000000000000000602 /* DataRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000502 /* DataRegion.swift */; };
@@ -87,6 +93,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE450000000000000000700 /* GameCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCatalog.swift; sourceTree = "<group>"; };
+		1AE450000000000000000701 /* CreateMatchStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateMatchStyle.swift; sourceTree = "<group>"; };
+		1AE450000000000000000702 /* CreateMatchDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateMatchDraft.swift; sourceTree = "<group>"; };
+		1AE450000000000000000703 /* CreateMatchModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateMatchModalView.swift; sourceTree = "<group>"; };
+		1AE450000000000000000704 /* GameModeGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModeGridView.swift; sourceTree = "<group>"; };
+		1AE450000000000000000705 /* GameRulesPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameRulesPanelView.swift; sourceTree = "<group>"; };
 		1AE45000000000000000006 /* RoomRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomRepository.swift; sourceTree = "<group>"; };
 		1AE45000000000000000007 /* LocalRoomRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRoomRepository.swift; sourceTree = "<group>"; };
 		1AE500000000000000000502 /* DataRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRegion.swift; sourceTree = "<group>"; };
@@ -164,6 +176,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1AE470000000000000000700 /* CreateMatch */ = {
+			isa = PBXGroup;
+			children = (
+				1AE450000000000000000700 /* GameCatalog.swift */,
+				1AE450000000000000000701 /* CreateMatchStyle.swift */,
+				1AE450000000000000000702 /* CreateMatchDraft.swift */,
+				1AE450000000000000000703 /* CreateMatchModalView.swift */,
+				1AE450000000000000000704 /* GameModeGridView.swift */,
+				1AE450000000000000000705 /* GameRulesPanelView.swift */,
+			);
+			path = CreateMatch;
+			sourceTree = "<group>";
+		};
+
 		1AE500000000000000000500 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -189,6 +215,7 @@
 				1AE48000000000000000002 /* RoomView.swift */,
 				1AE45000000000000000006 /* RoomRepository.swift */,
 				1AE45000000000000000007 /* LocalRoomRepository.swift */,
+				1AE470000000000000000700 /* CreateMatch */,
 			);
 			path = Lobby;
 			sourceTree = "<group>";
@@ -469,6 +496,12 @@
 				1AE4B000000000000237282 /* CricketKeypadView.swift in Sources */,
 				1AE4B000000000000894431 /* TrainingCenterView.swift in Sources */,
 				1AE49000000000000000002 /* RoomView.swift in Sources */,
+				1AE460000000000000000700 /* GameCatalog.swift in Sources */,
+				1AE460000000000000000701 /* CreateMatchStyle.swift in Sources */,
+				1AE460000000000000000702 /* CreateMatchDraft.swift in Sources */,
+				1AE460000000000000000703 /* CreateMatchModalView.swift in Sources */,
+				1AE460000000000000000704 /* GameModeGridView.swift in Sources */,
+				1AE460000000000000000705 /* GameRulesPanelView.swift in Sources */,
 				1AE46000000000000000006 /* RoomRepository.swift in Sources */,
 				1AE46000000000000000007 /* LocalRoomRepository.swift in Sources */,
 				1AE49000000000000000001 /* LobbyView.swift in Sources */,

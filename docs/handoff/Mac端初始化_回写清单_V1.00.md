@@ -2168,3 +2168,69 @@ Executed 17 tests, with 0 failures
 ```
 Executed 18 tests, with 0 failures
 ```
+
+## 23. 第 14 轮：比赛大厅「创建比赛」弹窗（前端 UI + 交互，不接后端）
+
+### 23.1 新增文件（`ios/DartVio/Features/Lobby/CreateMatch/`）
+
+| 文件 | 作用 |
+| --- | --- |
+| `GameCatalog.swift` | 19 个玩法的目录（P0/P1 + `hasRulesPanel` + `onlineReady`），顺序即网格顺序 |
+| `CreateMatchDraft.swift` | 表单草稿 + `X01RulesOptions` 选项表 + `X01RulesPatch` + `EntryConditions` |
+| `CreateMatchStyle.swift` | 白卡配色（局部定义，不并进 `Palette`） |
+| `CreateMatchModalView.swift` | 创建比赛弹窗（白卡 + 模糊遮罩 + 4 个组件区） |
+| `GameModeGridView.swift` | 游戏模式 3 列网格单选页 |
+| `GameRulesPanelView.swift` | 游戏规则配置面板（按玩法渲染） |
+
+### 23.2 三个关键设计决定
+
+**① 草稿活在大厅，不在弹窗里** —— 需求「子页面操作不重置弹窗原有表单」。
+弹窗 / 网格 / 规则面板共用一个 `fullScreenCover`，用 `CreateMatchRoute`（`.form` / `.gamePicker` / `.rules`）
+切内容，`CreateMatchDraft` 由 `LobbyView` 持有。若草稿放在弹窗内部，一次 dismiss 就全没了。
+
+**② 目录可以先列全，但不能假装能开** —— `GameCatalog` 每项带两个独立标记：
+
+- `tier`：需求给的 P0 / P1；
+- `onlineReady`：引擎能否给出权威联机对局（`RoomMatchRules.supportsLiveMatch` 只认 X01）。
+
+所以 **STANDARD CRICKET 是 P0 但 `onlineReady = false`**，网格上写「联机待开放」而不是只标 P0 ——
+只标 P0 会让用户以为选了就能建房。P1 项写「尚未开放」。
+
+**③ 不能创建的原因只有一个来源** —— `CreateMatchDraft.createBlocker`（玩法未开放 / 人数超限）
+与大厅的后端状态（未配置 / 未同意出境）汇成一条文案显示在卡里，创建按钮同时禁用：
+灰着的按钮必须配一句"为什么"，否则用户只能猜。
+
+### 23.3 交互
+
+| 操作 | 结果 |
+| --- | --- |
+| 弹窗「下拉箭头」 | 切到网格页；**选中即返回**（没有"确定"按钮，避免"选了但没确认"的中间态） |
+| 弹窗「游戏设置」 | 切到该玩法的规则面板；只有 X01 有 4 行面板，其余显示"尚未开放" |
+| 规则面板「保存」 | 面板在**本地副本**上改，保存才写回草稿 → 弹窗规则摘要更新；X 关闭 = 放弃 |
+| 底部「FIRST TO N LEGS」 | Menu 选 1/2/3/5/7 局 |
+
+**规则面板不复用**：用 X01 的「开镖/结镖」去套 Cricket 是规则错配，比没有面板更糟，所以非 X01 直接显示尚未开放。
+
+### 23.4 本期不开发的部分（预留）
+
+- **参赛条件**：`EntryConditions`（仅限好友 / 密码 / 最低 PPR 门槛）结构已留，UI 整组 `.disabled(true)`，
+  不是"能点却没反应"；
+- **录入口径**（每镖 / 每轮）是 **UI 侧口径**，不进 `MatchConfig`（引擎按镖结算），
+  落点在将来对局页的录入方式上。
+
+### 23.5 顺带改动
+
+- `SharedFactory.x01Config` 增加 `maxRounds` 参数（默认 0，不打扰既有调用点）；
+- 大厅「建房」按钮从 `actionRow` 移到新的创建比赛主行动卡（建房要走完整流程，不是一个按钮直接提交），
+  原 `CreateRoomSheet` 删除；
+- `Palette` 未改：白卡配色是这套弹窗独有的，先局部定义，等 Android 做同一套再一起收进共用色板。
+
+### 23.6 测试
+
+新增 `testV19CreateMatchFlow`（19 条全绿）：501→502 后往返网格页仍是 502（状态缓存）、
+选中 STANDARD CRICKET 回填并说明联机未开放、Cricket 无面板而 X01 有 4 行、
+保存后摘要含 MASTER IN 与 80、后端未配置时按钮禁用且给出原因。
+
+```
+Executed 19 tests, with 0 failures
+```

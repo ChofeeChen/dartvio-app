@@ -12,13 +12,18 @@ enum SharedFactory {
 
     // MARK: - X01
 
+    /**
+     * - Parameter maxRounds: 轮数上限（`<= 0` = 不限，与 `CricketRules.isRoundLimitWin` 同一口径）。
+     *   给默认值是为了不打扰既有调用点（单机对局目前都不限轮数）。
+     */
     static func x01Config(
         targetScore: Int32,
         mode: MatchMode,
         legsToWin: Int32,
         outMode: OutMode,
         inMode: InMode,
-        smartAi: Bool
+        smartAi: Bool,
+        maxRounds: Int32 = 0
     ) -> MatchConfig {
         MatchConfig(
             matchType: MatchType.x01,
@@ -28,7 +33,7 @@ enum SharedFactory {
             outMode: outMode,
             inMode: inMode,
             bullMode: BullMode.standard2550,
-            maxRounds: 0,
+            maxRounds: maxRounds,
             smartAi: smartAi,
             cricketVariant: CricketVariant.standard,
             cricketTargets: [],

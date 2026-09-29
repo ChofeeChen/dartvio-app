@@ -606,6 +606,91 @@ final class DartVioUITests: XCTestCase {
         )
     }
 
+    /**
+     * V19 创建比赛：弹窗 → 游戏网格 → 规则面板 → 回填与状态缓存。
+     *
+     * 钉住四件容易被"看起来做好了"骗过去的事：
+     *
+     * 1. **子页面往返不重置表单**：先把 501 加到 502，去网格页再回来仍是 502；
+     * 2. **网格选中即回填**：选 STANDARD CRICKET 后弹窗要出现该玩法名，并说明它联机未开放
+     *    （P0 ≠ 能开，引擎只为 X01 维护权威联机对局）；
+     * 3. **规则面板按玩法渲染**：Cricket 没有面板（不能套用 X01 的进出镖规则），
+     *    X01 才有 4 行；保存后弹窗的规则文字要跟着变；
+     * 4. **不能创建时必须给出原因且按钮禁用**（后端未配置时点"创建比赛"不该是一次无效请求）。
+     */
+    func testV19CreateMatchFlow() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["entryLobby"].tap()
+        app.buttons["lobbyCreate"].tap()
+
+        let hint = app.staticTexts["createMatchExpireHint"]
+        if !hint.waitForExistence(timeout: 8) { dumpUI(on: app, tag: "V19-modal") }
+        XCTAssertTrue(hint.label.contains("自动失效"), "弹窗上方必须写明比赛自动失效的规则")
+        XCTAssertTrue(
+            app.staticTexts["createMatchScoreValue"].label.contains("501"), "目标分默认 501"
+        )
+        XCTAssertTrue(
+            app.staticTexts["createMatchPlayersValue"].label.contains("2 位选手"), "人数默认 2"
+        )
+        XCTAssertFalse(
+            app.switches["entryConditionFriends"].isEnabled,
+            "参赛条件本期不开发：开关必须不可点，而不是能点却没反应"
+        )
+
+        // 501 → 502，用来验证子页面往返后表单还在。
+        app.buttons["createMatchScorePlus"].tap()
+
+        app.buttons["createMatchGameSelect"].tap()
+        if !app.otherElements["gameModeGrid"].waitForExistence(timeout: 5) { dumpUI(on: app, tag: "V19-grid") }
+        XCTAssertTrue(app.buttons["gameMode_x01"].exists, "网格里要有 X01")
+        XCTAssertTrue(app.buttons["gameMode_standard_cricket"].exists, "网格里要有 STANDARD CRICKET")
+        XCTAssertTrue(app.buttons["gameMode_gotcha"].exists, "网格里要有 GOTCHA（P1 也要列出来）")
+
+        app.buttons["gameMode_standard_cricket"].tap()
+        let blocker = app.staticTexts["createMatchBlocker"]
+        XCTAssertTrue(blocker.waitForExistence(timeout: 5), "选中后自动回弹窗，并说明为什么不能创建")
+        XCTAssertTrue(blocker.label.contains("STANDARD CRICKET"), "弹窗要回填选中的游戏名：\(blocker.label)")
+        XCTAssertTrue(
+            app.staticTexts["createMatchScoreValue"].label.contains("502"),
+            "子页面往返不能重置弹窗表单"
+        )
+
+        // Cricket 没有规则面板：不能拿 X01 的进出镖规则去套。
+        app.buttons["createMatchGameSettings"].tap()
+        XCTAssertTrue(
+            app.otherElements["rulesNotReady"].waitForExistence(timeout: 5),
+            "非 X01 不能渲染 X01 的规则面板"
+        )
+        app.buttons["rulesClose"].tap()
+
+        app.buttons["createMatchGameSelect"].tap()
+        app.buttons["gameMode_x01"].tap()
+        app.buttons["createMatchGameSettings"].tap()
+        XCTAssertTrue(app.buttons["rulesIn_masterIn"].waitForExistence(timeout: 5), "X01 面板要有开镖一行")
+        XCTAssertTrue(app.buttons["rulesOut_doubleOut"].exists, "X01 面板要有结镖一行")
+        XCTAssertTrue(app.buttons["rulesRounds80"].exists, "X01 面板要有轮数一行")
+        XCTAssertTrue(app.buttons["rulesInput_perRound"].exists, "X01 面板要有录入口径一行")
+
+        app.buttons["rulesIn_masterIn"].tap()
+        app.buttons["rulesRounds80"].tap()
+        app.buttons["rulesSave"].tap()
+
+        let summary = app.staticTexts["createMatchRulesSummary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5), "保存后要回到弹窗")
+        XCTAssertTrue(
+            summary.label.contains("MASTER IN") && summary.label.contains("80"),
+            "保存后弹窗的规则文字要更新，实际：\(summary.label)"
+        )
+
+        XCTAssertFalse(app.buttons["createMatchSubmit"].isEnabled, "后端未配置时不能创建")
+        XCTAssertTrue(
+            blocker.label.contains("联机后端未配置"),
+            "不能创建必须给出原因，而不是让按钮灰着：\(blocker.label)"
+        )
+    }
+
     /// 报告门槛：断言用的字面量，改了要与引擎 `ImpactCalculator.MIN_FULL_N` 保持一致。
     private let viewModelMinDarts = 30
 

@@ -27,19 +27,29 @@ struct LobbyView: View {
     @State private var message: String?
     @State private var isLoading = false
     @State private var showConfig = false
-    @State private var showCreate = false
     @State private var showJoin = false
     @State private var activeRoomId: String?
     @State private var showRoom = false
     @State private var localRepository: LocalRoomRepository?
     @State private var showLocalRoom = false
     @State private var isStartingLocal = false
+
+    // 创建比赛：三页共用一个 fullScreenCover（弹窗 / 游戏网格 / 规则面板），
+    // 草稿由大厅持有 —— 页面来回切时表单不重置（需求「子页面操作不重置弹窗原有表单」）。
+    @State private var showCreateMatch = false
+    @State private var createRoute: CreateMatchRoute = .form
+    @State private var draft = CreateMatchDraft()
+    @State private var isCreatingMatch = false
+    @State private var createError: String?
+    @State private var createRepository = OnlineRoomRepository()
+
     private let api = OnlineRoomApi()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 scopeCard
+                createMatchCard
                 localPlayCard
                 if !OnlineConfig.isConfigured {
                     notConfiguredCard
@@ -58,8 +68,14 @@ struct LobbyView: View {
         .task { await reload() }
         .refreshable { await reload() }
         .sheet(isPresented: $showConfig) { ConfigSheet { Task { await reload() } } }
-        .sheet(isPresented: $showCreate) { CreateRoomSheet { openRoom($0) } }
         .sheet(isPresented: $showJoin) { JoinRoomSheet { openRoom($0) } }
+        .fullScreenCover(isPresented: $showCreateMatch) {
+            createMatchPage
+        }
+        .onChange(of: showCreateMatch) { _, isPresented in
+            // 关掉整个流程后回到弹窗首页，下次打开不是上次停留的子页面。
+            if !isPresented { createRoute = .form; createError = nil }
+        }
         // 建房 / 加入成功后直接进房间：用 sheet 而不是 push，因为「刚创建的房间」不在列表里，
         // 没有可点的行（也就不必为了让 push 生效去折腾 navigationDestination）。
         .sheet(isPresented: $showRoom) {
@@ -81,6 +97,106 @@ struct LobbyView: View {
             "人数：1v1 房间",
             "流程：建房 / 加入 → 等候 → 对局 → 结算 → 再来一局",
         ])
+    }
+
+    // MARK: - 创建比赛
+
+    /** 创建比赛的三页：弹窗（form）→ 游戏网格（gamePicker）→ 规则面板（rules），选中/保存后回弹窗。 */
+    enum CreateMatchRoute {
+        case form
+        case gamePicker
+        case rules
+    }
+
+    @ViewBuilder
+    private var createMatchPage: some View {
+        switch createRoute {
+        case .form:
+            CreateMatchModalView(
+                draft: draft,
+                blocker: createBlocker,
+                errorMessage: createError,
+                isCreating: isCreatingMatch,
+                onClose: { showCreateMatch = false },
+                onPickGame: { createRoute = .gamePicker },
+                onOpenRules: { createRoute = .rules },
+                onCreate: { createMatch() }
+            )
+        case .gamePicker:
+            GameModeGridView(
+                selected: draft.game,
+                onSelect: { draft.game = $0; createRoute = .form },
+                onClose: { createRoute = .form }
+            )
+        case .rules:
+            GameRulesPanelView(
+                draft: draft,
+                onSave: { draft.apply($0); createRoute = .form },
+                onClose: { createRoute = .form }
+            )
+        }
+    }
+
+    /**
+     * 不能创建的原因（nil = 可以创建）。
+     *
+     * 玩法的限制来自草稿，后端与出境同意的状态来自这里 —— 两处汇成一条，
+     * 弹窗只负责显示并禁用按钮。
+     */
+    private var createBlocker: String? {
+        if let draftBlocker = draft.createBlocker { return draftBlocker }
+        guard OnlineConfig.isConfigured else {
+            return "联机后端未配置：先在大厅「配置」里填好地址与匿名密钥"
+        }
+        if DataTransferConsent.isRequired && !DataTransferConsent.isGranted {
+            return "服务器在\(DataTransferConsent.region)，联机即向境外提供个人信息：先在大厅点「同意并继续」"
+        }
+        return nil
+    }
+
+    private func createMatch() {
+        guard createBlocker == nil else { return }
+        isCreatingMatch = true
+        createError = nil
+        Task {
+            if let id = await createRepository.createRoom(
+                name: "\(createRepository.selfName) 的对局",
+                config: draft.matchConfig
+            ) {
+                isCreatingMatch = false
+                showCreateMatch = false
+                openRoom(id)
+            } else {
+                isCreatingMatch = false
+                createError = createRepository.errorMessage ?? "创建失败"
+            }
+        }
+    }
+
+    private var createMatchCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("创建比赛")
+                .font(.headline)
+                .foregroundStyle(Palette.textPrimary)
+            Text("选玩法 → 调规则 → 建房。P0 只开放 X01 · 1v1，其余玩法在弹窗里会写明未开放的原因。")
+                .font(.caption)
+                .foregroundStyle(Palette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button { showCreateMatch = true } label: {
+                Text("创建比赛")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Palette.onPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Palette.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .accessibilityIdentifier("lobbyCreate")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     /**
@@ -202,7 +318,8 @@ struct LobbyView: View {
 
     private var actionRow: some View {
         HStack(spacing: 10) {
-            actionButton("建房", symbol: "plus.circle", identifier: "lobbyCreate") { showCreate = true }
+            // 「建房」已经移到上面的创建比赛主行动卡里（建房要走完整的选玩法 / 调规则流程，
+            // 不是一个按钮直接提交），这里只留加入与配置。
             actionButton("用房间号加入", symbol: "number.circle", identifier: "lobbyJoin") { showJoin = true }
             actionButton("配置", symbol: "gearshape", identifier: "lobbyConfig") { showConfig = true }
         }
@@ -364,77 +481,6 @@ private struct ConfigSheet: View {
                     .disabled(url.isEmpty || key.isEmpty)
                     .accessibilityIdentifier("lobbyConfigSave")
                 }
-            }
-        }
-    }
-}
-
-// MARK: - 建房
-
-private struct CreateRoomSheet: View {
-    let onCreated: (String) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var targetScore: Int32 = 501
-    @State private var legsToWin: Int32 = 3
-    @State private var isCreating = false
-    @State private var error: String?
-    @State private var repository = OnlineRoomRepository()
-
-    private let targets: [Int32] = [301, 501, 701]
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("房间") {
-                    TextField("房间名（可留空）", text: $name)
-                    Picker("目标分", selection: $targetScore) {
-                        ForEach(targets, id: \.self) { Text("\($0)").tag($0) }
-                    }
-                    Stepper(value: $legsToWin, in: 1...7) {
-                        Text("先胜 \(legsToWin) 局")
-                    }
-                }
-                // 联机只做 X01：这句不是"暂不支持"，是引擎边界。
-                Section {
-                    Text("P0 联机只开放 X01 · 1v1。")
-                        .font(.caption)
-                        .foregroundStyle(Palette.textMuted)
-                }
-                if let error {
-                    Section { Text(error).foregroundStyle(Color(red: 0.9, green: 0.3, blue: 0.24)) }
-                }
-            }
-            .navigationTitle("建房")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(isCreating ? "创建中…" : "创建") { create() }
-                        .disabled(isCreating)
-                        .accessibilityIdentifier("lobbyCreateConfirm")
-                }
-            }
-        }
-    }
-
-    private func create() {
-        isCreating = true
-        Task {
-            let config = SharedFactory.x01Config(
-                targetScore: targetScore,
-                mode: legsToWin > 1 ? MatchMode.multiLeg : MatchMode.casual,
-                legsToWin: legsToWin,
-                outMode: OutMode.doubleOut,
-                inMode: InMode.straightIn,
-                smartAi: false
-            )
-            let roomName = name.isEmpty ? "\(repository.selfName) 的对局" : name
-            if let id = await repository.createRoom(name: roomName, config: config) {
-                onCreated(id)
-                dismiss()
-            } else {
-                error = repository.errorMessage ?? "创建失败"
-                isCreating = false
             }
         }
     }
