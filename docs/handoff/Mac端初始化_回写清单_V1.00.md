@@ -2234,3 +2234,57 @@ Executed 18 tests, with 0 failures
 ```
 Executed 19 tests, with 0 failures
 ```
+
+## 24. 第 15 轮：Cricket 对局页按移动端规范重做
+
+### 24.1 改动
+
+| 文件 | 说明 |
+| --- | --- |
+| `Features/Game/CricketGameView.swift` | 整页重排：顶栏 / 竖排三栏板面 / 选手比分卡 / 底部录入区 / Leg 胜利弹窗 |
+| `Components/CricketEntryPadView.swift` | 新增：底部固定录入区（3 镖位 + 号位键 + T/D + 撤销上一轮 + 提交本轮） |
+| `Features/Game/CricketMatchStyle.swift` | 新增：规范指定色（`#1A1A1A` / 绿 `#38C172` / 红 `#F24747`），未并入 `Palette` |
+| `Features/Game/CricketGameViewModel.swift` | 新增倒计时/暂停、回合级撤销、Leg 结果（`legResult`）；修复 AI 任务过期落镖 |
+| `Components/CricketKeypadView.swift` | **删除**：已被录入区取代，无调用方 |
+
+### 24.2 规则仍然一律走引擎
+
+标记（单倍 +1 / 双倍 +2 / 三倍 +3）、关闭、得分（仅我方已关且对手未关）、
+「关满 + 分不落后才算赢」、轮次切换全部由 `CricketRules` 给出 —— UI 不数标记、不判胜负。
+理由照旧：`isRoundLimitWin` 上还有一条已申报的平分口径缺口，那个行为必须两端一致。
+
+### 24.3 三个值得记住的决定
+
+**① 三栏板面是 1v1 口径，多人局不硬塞。** 规范的三栏是「本人 | 靶号 | 对手」，
+对手席位最多 3 个（`OpponentSeat.maxOpponents`）时四个人挤进三栏每行都读不出是谁的标记，
+所以 `players.count != 2` 时退回「目标 × 玩家」矩阵，不假装能塞。
+
+**② BULL 只有一个键，但口径有两个。** 外牛眼 1 标记、内牛眼 2 标记（引擎按 `multiplier` 记），
+所以 BULL 与倍率联动：**S+BULL = BULL 25、D+BULL = BULL 50**；
+Bull 没有"三倍"，T 状态下按 BULL 落在内牛眼 —— 不吞镖，也不假装存在 T-Bull。
+
+**③ 撤销退的是「上一轮」，且连 AI 那一轮一起退。** 只退一步会停在"轮到 AI"的死局：
+板面变了、键盘锁着、AI 不会自己动。所以一直退到**轮到本人**为止。
+
+### 24.4 修掉一个真 bug：AI 任务过期后仍会落镖（V20 抓到）
+
+`Task.cancel()` 是协作式的，而 AI 任务**尾部的 `commitTurn` 与已排队 `applyClaimed` 都不查取消标记** ——
+撤销之后它们照样执行，结果是对手的镖被写进**本人**回合（撤销完镖位里出现 D16）。
+
+修法：`aiGeneration` 世代令牌。撤销 / 换局时 `+1` 并 `cancel()`，任务每次落地前比对令牌，
+过期即退出。**光靠 cancel 拦不住这个**，这是本轮最值钱的一条。
+
+### 24.5 未覆盖
+
+Leg 胜利弹窗与整场胜利**没有自动化覆盖**：要打到"关满 7 个靶号 + 分不落后"需要十几个回合，
+UI 测试里既慢又会与 AI 的随机镖相互干扰。手工验证过路径（提交满足胜利条件 → 弹窗 → 继续下一局）。
+
+### 24.6 测试
+
+新增 `testV20CricketMatchPage`：倒计时/暂停按钮文案切换、T+20 后镖位回填 "T20"、
+提交后板面出现 ⊠、撤销后 ⊠ 消失且镖位清空（钉住上面那个 AI 过期落镖的 bug）。
+V14 的「结束回合」改为「提交本轮」。
+
+```
+Executed 20 tests, with 0 failures
+```

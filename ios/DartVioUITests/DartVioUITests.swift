@@ -415,7 +415,7 @@ final class DartVioUITests: XCTestCase {
         // T20：三倍 20 = 直接集满 3 个记号（Cricket 的"累计 3 次"口径）
         app.buttons["T"].tap()
         app.buttons["20"].tap()
-        app.buttons["结束回合"].tap()
+        app.buttons["提交本轮"].tap()
 
         // 矩阵与分数都应在**回合结束后**立即可见
         if !app.otherElements["cricketScores"].exists {
@@ -603,6 +603,63 @@ final class DartVioUITests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts["481"].waitForExistence(timeout: 8),
             "501 投出 S20 后剩余必须是 481 —— 分数要由事件重放出来，不是本机自己算的"
+        )
+    }
+
+    /**
+     * V20 Cricket 对局页（移动端规范）：镖位录入 → 提交 → 撤销上一轮。
+     *
+     * 钉的是三条新交互各自的"为什么"：
+     *
+     * 1. **镖位要显示录进去的镖**（T + 20 ⇒ "T20"）—— 只改板面不回填镖位，玩家不知道自己录了什么；
+     * 2. **T20 一镖关掉 20**（板面出现 ⊠）—— 累计 3 次的口径由引擎给，UI 不能自己数；
+     * 3. **撤销要连 AI 那一轮一起退**：只退一步会停在"轮到 AI"的死局（板面变了、键盘锁着、
+     *    AI 不会自己动）。退完必须回到本人回合，且板面上不该还留着 ⊠。
+     */
+    func testV20CricketMatchPage() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["entryCricket"].tap()
+        app.buttons["cricketStart"].tap()
+
+        let board = app.otherElements["cricketBoard"]
+        if !board.waitForExistence(timeout: 10) { dumpUI(on: app, tag: "V20-board") }
+        XCTAssertTrue(app.staticTexts["20"].exists, "板面要有 20 号位")
+        XCTAssertTrue(app.staticTexts["BULL"].exists, "板面要有 BULL 号位")
+        XCTAssertTrue(app.staticTexts["cricketCountdown"].exists, "顶栏要有倒计时")
+
+        let pause = app.buttons["cricketPause"]
+        XCTAssertTrue(pause.waitForExistence(timeout: 3), "顶栏要有暂停按钮")
+        pause.tap()
+        XCTAssertEqual(pause.label, "继续", "暂停后按钮要变成「继续」")
+        pause.tap()
+        XCTAssertEqual(pause.label, "暂停", "再点一次要恢复成「暂停」")
+
+        app.buttons["T"].tap()
+        app.buttons["20"].tap()
+        let slot = app.buttons["cricketDartSlot0"]
+        XCTAssertTrue(slot.waitForExistence(timeout: 3))
+        XCTAssertTrue(
+            slot.label.contains("T20"),
+            "镖位要回填录入的镖（T + 20 ⇒ T20），实际：\(slot.label)"
+        )
+
+        app.buttons["提交本轮"].tap()
+        let closedMark = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "⊠")
+        ).firstMatch
+        if !closedMark.waitForExistence(timeout: 15) { dumpUI(on: app, tag: "V20-closed") }
+        XCTAssertTrue(closedMark.exists, "一镖 T20 应当关掉 20（板面出现 ⊠）")
+
+        app.buttons["cricketUndoRound"].tap()
+        XCTAssertFalse(
+            closedMark.waitForExistence(timeout: 3),
+            "撤销上一轮要把本人与 AI 那一轮一起退掉，板面上不该还留着 ⊠"
+        )
+        XCTAssertTrue(
+            slot.label.contains("—"),
+            "撤销后回到本人回合且镖位清空，实际：\(slot.label)"
         )
     }
 

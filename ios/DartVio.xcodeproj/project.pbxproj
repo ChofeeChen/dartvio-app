@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE46A000000000000000002 /* CricketEntryPadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45A000000000000000002 /* CricketEntryPadView.swift */; };
+		1AE46A000000000000000001 /* CricketMatchStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE45A000000000000000001 /* CricketMatchStyle.swift */; };
 		1AE460000000000000000700 /* GameCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000700 /* GameCatalog.swift */; };
 		1AE460000000000000000701 /* CreateMatchStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000701 /* CreateMatchStyle.swift */; };
 		1AE460000000000000000702 /* CreateMatchDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE450000000000000000702 /* CreateMatchDraft.swift */; };
@@ -21,7 +23,6 @@
 		1AE500000000000000000103 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000003 /* PrivacyPolicyView.swift */; };
 		1AE500000000000000000102 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000002 /* SettingsView.swift */; };
 		1AE500000000000000000101 /* AccountStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000001 /* AccountStore.swift */; };
-		1AE4B000000000000237282 /* CricketKeypadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE4A000000000000237282 /* CricketKeypadView.swift */; };
 		1AE4B000000000000894431 /* TrainingCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE4A000000000000894431 /* TrainingCenterView.swift */; };
 		1AE49000000000000000002 /* RoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE48000000000000000002 /* RoomView.swift */; };
 		1AE49000000000000000001 /* LobbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE48000000000000000001 /* LobbyView.swift */; };
@@ -93,6 +94,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE45A000000000000000002 /* CricketEntryPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketEntryPadView.swift; sourceTree = "<group>"; };
+		1AE45A000000000000000001 /* CricketMatchStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketMatchStyle.swift; sourceTree = "<group>"; };
 		1AE450000000000000000700 /* GameCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCatalog.swift; sourceTree = "<group>"; };
 		1AE450000000000000000701 /* CreateMatchStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateMatchStyle.swift; sourceTree = "<group>"; };
 		1AE450000000000000000702 /* CreateMatchDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateMatchDraft.swift; sourceTree = "<group>"; };
@@ -108,7 +111,6 @@
 		1AE500000000000000000003 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		1AE500000000000000000002 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1AE500000000000000000001 /* AccountStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStore.swift; sourceTree = "<group>"; };
-		1AE4A000000000000237282 /* CricketKeypadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CricketKeypadView.swift; sourceTree = "<group>"; };
 		1AE4A000000000000894431 /* TrainingCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingCenterView.swift; sourceTree = "<group>"; };
 		1AE48000000000000000002 /* RoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomView.swift; sourceTree = "<group>"; };
 		1AE48000000000000000001 /* LobbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyView.swift; sourceTree = "<group>"; };
@@ -313,6 +315,7 @@
 				100000000000000000000017 /* X01GameView.swift */,
 							1AE441111111111111111111 /* CricketGameViewModel.swift */,
 				1AE443111111111111111111 /* CricketGameView.swift */,
+				1AE45A000000000000000001 /* CricketMatchStyle.swift */,
 );
 			path = Game;
 			sourceTree = "<group>";
@@ -344,7 +347,7 @@
 			children = (
 				10000000000000000000001B /* KeypadView.swift */,
 				10000000000000000000001C /* GameCommon.swift */,
-				1AE4A000000000000237282 /* CricketKeypadView.swift */,
+				1AE45A000000000000000002 /* CricketEntryPadView.swift */,
 							1AE430000000000000000000 /* BoardRender.swift */,
 );
 			path = Components;
@@ -493,7 +496,6 @@
 				1AE500000000000000000103 /* PrivacyPolicyView.swift in Sources */,
 				1AE500000000000000000102 /* SettingsView.swift in Sources */,
 				1AE500000000000000000101 /* AccountStore.swift in Sources */,
-				1AE4B000000000000237282 /* CricketKeypadView.swift in Sources */,
 				1AE4B000000000000894431 /* TrainingCenterView.swift in Sources */,
 				1AE49000000000000000002 /* RoomView.swift in Sources */,
 				1AE460000000000000000700 /* GameCatalog.swift in Sources */,
@@ -536,6 +538,8 @@
 				20000000000000000000002B /* VersusFlowView.swift in Sources */,
 							1AE431000000000000000000 /* BoardRender.swift in Sources */,
 				1AE442111111111111111111 /* CricketGameViewModel.swift in Sources */,
+				1AE46A000000000000000002 /* CricketEntryPadView.swift in Sources */,
+				1AE46A000000000000000001 /* CricketMatchStyle.swift in Sources */,
 				1AE444111111111111111111 /* CricketGameView.swift in Sources */,
 				1AE446111111111111111111 /* CricketSetupView.swift in Sources */,
 );
