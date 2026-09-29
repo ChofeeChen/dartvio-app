@@ -39,7 +39,7 @@ struct LobbyView: View {
                 scopeCard
                 if !OnlineConfig.isConfigured {
                     notConfiguredCard
-                } else if !DataTransferConsent.isGranted {
+                } else if DataTransferConsent.isRequired && !DataTransferConsent.isGranted {
                     // 同意之前不建房、不拉列表：拉取列表本身就要把请求发到境外服务器。
                     consentCard
                 } else {

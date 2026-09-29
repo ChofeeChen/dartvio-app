@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AE500000000000000000602 /* DataRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000502 /* DataRegion.swift */; };
 		1AE500000000000000000601 /* DataTransferConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000501 /* DataTransferConsent.swift */; };
 		1AE500000000000000000301 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000300 /* PrivacyInfo.xcprivacy */; };
 		1AE500000000000000000103 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE500000000000000000003 /* PrivacyPolicyView.swift */; };
@@ -84,6 +85,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1AE500000000000000000502 /* DataRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRegion.swift; sourceTree = "<group>"; };
 		1AE500000000000000000501 /* DataTransferConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTransferConsent.swift; sourceTree = "<group>"; };
 		1AE500000000000000000400 /* DartVio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DartVio.entitlements; sourceTree = "<group>"; };
 		1AE500000000000000000300 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = DartVio/PrivacyInfo.xcprivacy; sourceTree = SOURCE_ROOT; };
@@ -163,6 +165,7 @@
 			children = (
 				1AE500000000000000000001 /* AccountStore.swift */,
 				1AE500000000000000000002 /* SettingsView.swift */,
+				1AE500000000000000000502 /* DataRegion.swift */,
 				1AE500000000000000000501 /* DataTransferConsent.swift */,
 				1AE500000000000000000003 /* PrivacyPolicyView.swift */,
 			);
@@ -452,6 +455,7 @@
 				200000000000000000000012 /* SharedAccess.swift in Sources */,
 				200000000000000000000013 /* SharedFactory.swift in Sources */,
 				200000000000000000000014 /* RootTabsView.swift in Sources */,
+				1AE500000000000000000602 /* DataRegion.swift in Sources */,
 				1AE500000000000000000601 /* DataTransferConsent.swift in Sources */,
 				1AE500000000000000000103 /* PrivacyPolicyView.swift in Sources */,
 				1AE500000000000000000102 /* SettingsView.swift in Sources */,
@@ -583,7 +587,6 @@
 					"-framework",
 					shared,
 				);
-				CODE_SIGN_ENTITLEMENTS = DartVio/DartVio.entitlements;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dartvio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -617,7 +620,6 @@
 					"-framework",
 					shared,
 				);
-				CODE_SIGN_ENTITLEMENTS = DartVio/DartVio.entitlements;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dartvio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

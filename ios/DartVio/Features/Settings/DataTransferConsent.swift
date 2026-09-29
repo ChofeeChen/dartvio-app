@@ -23,9 +23,19 @@ enum DataTransferConsent {
 
     // TODO(正式版): 换成真实的运营主体名称与联系方式，这是第 39 条要求告知的"境外接收方"信息。
     static let recipient = "DartVio 自建联机服务（运营主体名称待补充）"
-    static let region = "新加坡（腾讯云境外节点，用于开发与测试）"
     static let purposes = "同步联机对局状态，使对局双方看到同一份进展"
     static let categories = "昵称、你在房间内的落镖操作与成绩、房间标识"
+
+    /// 区域来自 `DataRegion`（配置），不在这里写死"新加坡"。
+    static var region: String { DataRegion.current.placeName }
+
+    /**
+     * 是否**需要**出境单独同意。
+     *
+     * 正式版迁回境内后 `DataRegion == .mainland`，这一步就不该再拦用户 ——
+     * 对一个没有出境的场景索要"出境同意"，本身就是告知错误。
+     */
+    static var isRequired: Bool { DataRegion.current.isOverseas }
 
     static var isGranted: Bool { UserDefaults.standard.bool(forKey: key) }
 

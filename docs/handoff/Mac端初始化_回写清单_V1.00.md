@@ -2033,3 +2033,73 @@ V17 增加两条断言：服务提供地如实显示「新加坡」、出境同�
 ```
 Executed 17 tests, with 0 failures
 ```
+
+## 23. 第 13 轮：真机编译修复 + 数据区域可配置（正式版迁回境内）
+
+### 23.1 ⚠️ 编译失败的真正原因（不是代码问题）
+
+真机 / device 构建报：
+
+```
+Provisioning profile "iOS Team Provisioning Profile: com.dartvio.app"
+  doesn't include the Sign In with Apple capability.
+Cannot create a iOS App Development provisioning profile for "com.dartvio.app".
+Personal development teams, including "Feng Chen", do not support the Sign In with Apple capability.
+```
+
+⇒ 当前签名用的是**个人（免费）开发者团队**，免费账号**不支持** Sign in with Apple 能力。
+模拟器不签名所以一直是 `BUILD SUCCEEDED`，这个坑只在真机构建时暴露（这也是之前没发现的原因）。
+
+**出路只有两条**：换付费 Apple Developer Program 账号；或暂时摘掉该能力。
+已做成开关 `ios/Scripts/toggle_sign_in_with_apple.sh on|off`，同时改两处（必须一起改）：
+
+| 改动 | 作用 |
+| --- | --- |
+| `CODE_SIGN_ENTITLEMENTS` | 决定描述文件要不要含该权限 → 决定真机能否编过 |
+| `SWIFT_ACTIVE_COMPILATION_CONDITIONS = ENABLE_SIGN_IN_WITH_APPLE` | 决定设置页渲染官方按钮，还是渲染"当前构建未启用"说明 |
+
+**当前默认 off**：任何账号都能真机编译。实测两种构建都绿：
+
+```
+模拟器 BUILD SUCCEEDED / 真机(device) BUILD SUCCEEDED / SIWA on 分支也 BUILD SUCCEEDED
+```
+
+付费账号就位后：开发者后台给 `com.dartvio.app` 勾 Sign in with Apple → `Scripts/toggle_sign_in_with_apple.sh on`。
+
+### 23.2 数据区域配置化（用户：正式版迁回境内，走合规审核上线）
+
+新增 `Features/Settings/DataRegion.swift` —— 区域**只有一个来源**：Info.plist 的 `DataRegion`
+（`mainland` / `overseas`），缺 key 时**默认 overseas（取更严格的一边）**，漏配不会变成"少告知"。
+
+| | 境内 `mainland` | 境外 `overseas` |
+| --- | --- | --- |
+| 出境单独同意（PIPL 39） | 不需要，同意门自动关闭 | 需要，同意前不发请求 |
+| ICP 备案 | 必填（App Store Connect 中国区上架）；未填显示"待填写" | 不适用 |
+| 隐私政策第四节 | 「存储地点与期限」，写境内 | 「存储地点、出境与期限」，列全第 39 条告知项 |
+
+切换方式（工程 `GENERATE_INFOPLIST_FILE = YES`，加 build setting 即可，不用手改 plist）：
+
+```
+INFOPLIST_KEY_DataRegion = mainland
+INFOPLIST_KEY_IcpFiling  = <备案号>     // 境内必填，境外忽略
+INFOPLIST_KEY_DataRegionPlace = <地区>  // 境外时写具体国家或地区，默认"新加坡"
+```
+
+随之改动：`DataTransferConsent.isRequired`（境内 false）、`LobbyView` 同意门、
+设置页"服务提供地 / ICP 备案"、隐私政策第一/四/六节全部按区域生成。
+
+### 23.3 正式版上线清单（按用户"走合规审核流程"）
+
+1. 服务器迁回**境内**并停机境外节点（迁完改 `INFOPLIST_KEY_DataRegion = mainland`）
+2. 域名 ICP 备案 + 公安备案；App Store Connect 填备案号
+3. 付费开发者账号 → 开 SIWA → `toggle_sign_in_with_apple.sh on`
+4. 补三项占位：隐私政策联系邮箱、境外接收方主体名称（境内后不再需要）、服务端数据保留期限
+5. 后端账号接口就绪后，`AccountStore.deleteAccount()` 补"调用后端删除"（已留 TODO）
+
+### 23.4 测试
+
+V17 改为断言「官方 SIWA 按钮」或「未启用说明」二者必有其一（因为默认 off）：
+
+```
+Executed 17 tests, with 0 failures
+```

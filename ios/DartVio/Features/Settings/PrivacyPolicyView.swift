@@ -71,15 +71,69 @@ struct PrivacyPolicyView: View {
         let body: String
     }
 
+    // MARK: - 随区域变化的段落
+
+    /** 区域来自 `DataRegion`：境外要写"出境"与单独同意，境内不写（写了就是告知错误）。 */
+    private static var collectBody: String {
+        let base = """
+        1. 本机数据：对局设置、历史成绩与训练记录。仅保存在你的设备本地，不上传，卸载 App 即随之删除。
+        2. Apple 账户标识：你选择「通过 Apple 登录」时，我们保存 Apple 返回的稳定标识符与昵称，用于识别你的账号与同步数据。标识符保存在设备钥匙串中，我们不保存你的 Apple 密码，也不索取邮箱与手机号。
+        3. 联机对局数据：你主动进入联机房间时，昵称、房间内的操作与成绩会发送到我们的服务器，供对局双方同步。不联机则不产生这类数据。
+        4. 匿名使用统计：默认关闭。你主动开启后，才会在不含直接身份标识的前提下上报功能使用情况。
+        """
+        guard DataRegion.current.isOverseas else { return base }
+        return base + "\n（当前该服务器位于\(DataTransferConsent.region)，第 3 项属于个人信息出境，我们会事先取得你的单独同意，详见第四节。）"
+    }
+
+    private static var storageTitle: String {
+        DataRegion.current.isOverseas ? "四、存储地点、出境与期限" : "四、存储地点与期限"
+    }
+
+    private static var storageBody: String {
+        let retention = """
+        数据保留至你删除账号或停止使用相关功能为止；账号注销后我们会清除相关个人信息
+        （法律、法规规定需留存的最小日志除外）。
+        """
+        guard DataRegion.current.isOverseas else {
+            return """
+            本机数据始终留在你的设备上。联机对局数据与（如你开启的）统计数据存储在
+            中华人民共和国境内的自建服务器，不向境外提供。
+            \(retention)
+            """
+        }
+        return """
+        本机数据始终留在你的设备上。联机对局数据与（如你开启的）统计数据存储在我们自建的服务器，
+        该服务器目前位于\(DataTransferConsent.region)，属于向中华人民共和国境外提供个人信息。
+
+        境外接收方：\(DataTransferConsent.recipient)；所在国家或地区：\(DataTransferConsent.region)；
+        处理目的：\(DataTransferConsent.purposes)；处理方式：经加密通道传输并存储；
+        个人信息种类：\(DataTransferConsent.categories)。
+
+        依据《个人信息保护法》第三十九条，我们在向境外提供前会向你告知上述事项，并单独取得你的同意；
+        你可以随时撤回该同意（设置 → 隐私 → 向境外提供个人信息），撤回后立即停止传输。
+        你也可以向我们索取境外接收方信息的副本。
+        \(retention)
+        """
+    }
+
+    private static var rightsBody: String {
+        let base = """
+        你有权查阅、复制、更正、补充、删除你的个人信息，有权撤回已作出的同意，有权注销账号。
+        路径：App 内「设置 → 账号 → 删除账号」可注销并清除本机账号信息与联机身份；
+        「设置 → 隐私 → 匿名使用统计」可随时撤回统计授权。
+        """
+        let crossBorder = "「设置 → 隐私 → 向境外提供个人信息」可撤回出境传输的单独同意（撤回后联机功能停止传输）。"
+        let tail = """
+        你也可以联系我们行使上述权利，我们会在收到请求后十五个工作日内响应。
+        注销前请知悉：账号注销后数据无法恢复。
+        """
+        return DataRegion.current.isOverseas ? base + crossBorder + tail : base + tail
+    }
+
     private static let sections: [Section] = [
         Section(
             title: "一、我们收集哪些信息",
-            body: """
-            1. 本机数据：对局设置、历史成绩与训练记录。仅保存在你的设备本地，不上传，卸载 App 即随之删除。
-            2. Apple 账户标识：你选择「通过 Apple 登录」时，我们保存 Apple 返回的稳定标识符与昵称，用于识别你的账号与同步数据。标识符保存在设备钥匙串中，我们不保存你的 Apple 密码，也不索取邮箱与手机号。
-            3. 联机对局数据：你主动进入联机房间时，昵称、房间内的操作与成绩会发送到我们的服务器，供对局双方同步。不联机则不产生这类数据。该服务器目前位于新加坡（境外），因此这类传输属于个人信息出境，我们会事先取得你的单独同意（见第四节）。
-            4. 匿名使用统计：默认关闭。你主动开启后，才会在不含直接身份标识的前提下上报功能使用情况。
-            """
+            body: collectBody
         ),
         Section(
             title: "二、我们不收集什么",
@@ -97,21 +151,8 @@ struct PrivacyPolicyView: View {
             """
         ),
         Section(
-            title: "四、存储地点、出境与期限",
-            body: """
-            本机数据始终留在你的设备上。联机对局数据与（如你开启的）统计数据存储在我们自建的服务器，
-            该服务器目前位于新加坡，属于向中华人民共和国境外提供个人信息。
-
-            境外接收方：\(DataTransferConsent.recipient)；所在国家或地区：\(DataTransferConsent.region)；
-            处理目的：\(DataTransferConsent.purposes)；处理方式：经加密通道传输并存储；
-            个人信息种类：\(DataTransferConsent.categories)。
-
-            依据《个人信息保护法》第三十九条，我们在向境外提供前会向你告知上述事项，并单独取得你的同意；
-            你可以随时撤回该同意（设置 → 隐私 → 向境外提供个人信息），撤回后立即停止传输。
-            你也可以向我们索取境外接收方信息的副本。
-            数据保留至你删除账号或停止使用相关功能为止；账号注销后我们会清除相关个人信息
-            （法律、法规规定需留存的最小日志除外）。
-            """
+            title: storageTitle,
+            body: storageBody
         ),
         Section(
             title: "五、共享、转让与公开",
@@ -123,14 +164,7 @@ struct PrivacyPolicyView: View {
         ),
         Section(
             title: "六、你的权利",
-            body: """
-            你有权查阅、复制、更正、补充、删除你的个人信息，有权撤回已作出的同意，有权注销账号。
-            路径：App 内「设置 → 账号 → 删除账号」可注销并清除本机账号信息与联机身份；
-            「设置 → 隐私 → 匿名使用统计」可随时撤回统计授权；
-            「设置 → 隐私 → 向境外提供个人信息」可撤回出境传输的单独同意（撤回后联机功能停止传输）。
-            你也可以联系我们行使上述权利，我们会在收到请求后十五个工作日内响应。
-            注销前请知悉：账号注销后数据无法恢复。
-            """
+            body: rightsBody
         ),
         Section(
             title: "七、未成年人保护",

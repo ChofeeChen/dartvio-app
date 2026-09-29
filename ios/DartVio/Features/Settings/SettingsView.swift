@@ -62,6 +62,7 @@ struct SettingsView: View {
                     .font(.caption2)
                     .foregroundStyle(Palette.textMuted)
 
+#if ENABLE_SIGN_IN_WITH_APPLE
                 // 官方控件：样式与最小尺寸由系统保证，不自己画一个"苹果登录"按钮
                 //（4.8 要求 Sign in with Apple 必须使用官方按钮样式）。
                 SignInWithAppleButton(.signIn) { request in
@@ -73,6 +74,14 @@ struct SettingsView: View {
                 .signInWithAppleButtonStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .accessibilityIdentifier("signInWithApple")
+#else
+                // 个人（免费）开发者团队不支持 Sign in with Apple 能力，带上 entitlement 真机签名会失败，
+                // 所以用编译开关整体摘掉：能真机跑，功能等付费账号就位后再打开（见 `Scripts/toggle_sign_in_with_apple.sh`）。
+                Text("当前构建未启用「通过 Apple 登录」（需要付费开发者账号的能力授权）。")
+                    .font(.caption2)
+                    .foregroundStyle(Palette.textMuted)
+                    .accessibilityIdentifier("signInWithAppleDisabled")
+#endif
 
                 Text("我们只索取昵称，不索取邮箱、手机号；不登录不会限制任何功能。")
                     .font(.caption2)
@@ -145,23 +154,26 @@ struct SettingsView: View {
 
             Divider().background(Palette.divider)
 
-            Toggle(isOn: $crossBorderConsent) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("向境外提供个人信息")
-                        .font(.subheadline)
-                        .foregroundStyle(Palette.textPrimary)
-                    Text("联机服务器在新加坡，开启后才会传输；关闭即撤回同意，且立即停止传输。")
-                        .font(.caption2)
-                        .foregroundStyle(Palette.textMuted)
+            // 境内不需要"出境同意"：对一个没有出境的场景索要出境同意，本身就是告知错误。
+            if DataTransferConsent.isRequired {
+                Toggle(isOn: $crossBorderConsent) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("向境外提供个人信息")
+                            .font(.subheadline)
+                            .foregroundStyle(Palette.textPrimary)
+                        Text("联机服务器在\(DataTransferConsent.region)，开启后才会传输；关闭即撤回同意，且立即停止传输。")
+                            .font(.caption2)
+                            .foregroundStyle(Palette.textMuted)
+                    }
                 }
-            }
-            .tint(Palette.primary)
-            .accessibilityIdentifier("crossBorderToggle")
-            .onChange(of: crossBorderConsent) { _, granted in
-                granted ? DataTransferConsent.grant() : DataTransferConsent.revoke()
-            }
+                .tint(Palette.primary)
+                .accessibilityIdentifier("crossBorderToggle")
+                .onChange(of: crossBorderConsent) { _, granted in
+                    granted ? DataTransferConsent.grant() : DataTransferConsent.revoke()
+                }
 
-            Divider().background(Palette.divider)
+                Divider().background(Palette.divider)
+            }
 
             NavigationLink {
                 PrivacyPolicyView()
@@ -197,11 +209,10 @@ struct SettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(Palette.textSecondary)
                 Spacer()
-                // ⚠️ 服务器在境外（新加坡，腾讯云）—— 联机即出境，隐私政策与单独同意都按境外写。
-                // 正式版若迁回境内，这里、隐私政策第四节、`DataTransferConsent` 三处要一起改。
-                Text("新加坡（境外）")
+                // 区域只有一个来源：`DataRegion`（Info.plist）。迁移境内时改配置，不改代码。
+                Text(DataRegion.current.displayName)
                     .font(.subheadline)
-                    .foregroundStyle(Palette.warning)
+                    .foregroundStyle(DataRegion.current.isOverseas ? Palette.warning : Palette.textPrimary)
             }
             .accessibilityIdentifier("serviceRegionRow")
 
@@ -210,9 +221,10 @@ struct SettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(Palette.textSecondary)
                 Spacer()
-                Text("不适用（服务器在境外）")
+                // 境内必填（中国区上架要填备案号）；境外不适用。
+                Text(icpText)
                     .font(.subheadline)
-                    .foregroundStyle(Palette.textMuted)
+                    .foregroundStyle(icpText == "待填写" ? Palette.warning : Palette.textMuted)
             }
             .accessibilityIdentifier("icpRow")
         }
@@ -254,6 +266,13 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Palette.divider, lineWidth: 1)
         )
+    }
+
+    /// 境内：有备案号就显示，没有就明确"待填写"（不能编一个假的，备案号要能在工信部查到）。
+    /// 境外：不适用。
+    private var icpText: String {
+        if let filing = DataRegion.icpFiling { return filing }
+        return DataRegion.current.isOverseas ? "不适用（服务器在境外）" : "待填写"
     }
 
     private var appVersion: String {
